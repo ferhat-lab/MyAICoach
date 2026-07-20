@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun RegisterScreen(
@@ -44,6 +45,12 @@ fun RegisterScreen(
     viewModel: RegisterViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.isRegisterSuccess) {
+        if (state.isRegisterSuccess) {
+            onLoginClick()
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -221,6 +228,16 @@ fun RegisterScreen(
         )
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        state.generalError?.let { errorMessage ->
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         Button(
             onClick = viewModel::register,

@@ -35,7 +35,11 @@ fun AppNavHost() {
                     navController.popBackStack()
                 },
                 onLoginClick = {
-                    navController.popBackStack()
+                    navController.navigate(AppRoute.Login.route) {
+                        popUpTo(AppRoute.Register.route) {
+                            inclusive = true
+                        }
+                    }
                 }
             )
         }

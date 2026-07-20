@@ -24,5 +24,8 @@ data class RegisterState(
 
     val confirmPasswordError: String? = null,
 
-    val generalError: String? = null
+    val generalError: String? = null,
+
+    val isRegisterSuccess: Boolean = false
+
 )

@@ -5,8 +5,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import com.ferhat.myaicoach.data.auth.AuthRepository
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
-class LoginViewModel : ViewModel() {
+class LoginViewModel(
+    private val authRepository: AuthRepository = AuthRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginState())
     val uiState: StateFlow<LoginState> = _uiState.asStateFlow()
@@ -39,30 +44,63 @@ class LoginViewModel : ViewModel() {
         }
     }
 
-    fun login(): Boolean {
-        val currentState = _uiState.value
+    fun login() {
 
-        val emailError = when {
-            currentState.email.isBlank() -> "E-posta adresi boş bırakılamaz."
-            !android.util.Patterns.EMAIL_ADDRESS
-                .matcher(currentState.email)
-                .matches() -> "Geçerli bir e-posta adresi girin."
-            else -> null
+        val state = uiState.value
+
+        if (state.email.isBlank()) {
+            _uiState.update {
+                it.copy(emailError = "E-posta boş olamaz")
+            }
+            return
         }
 
-        val passwordError = when {
-            currentState.password.isBlank() -> "Şifre boş bırakılamaz."
-            currentState.password.length < 6 -> "Şifre en az 6 karakter olmalıdır."
-            else -> null
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches()) {
+            _uiState.update {
+                it.copy(emailError = "Geçerli bir e-posta giriniz")
+            }
+            return
+        }
+
+        if (state.password.isBlank()) {
+            _uiState.update {
+                it.copy(passwordError = "Şifre boş olamaz")
+            }
+            return
         }
 
         _uiState.update {
-            it.copy(
-                emailError = emailError,
-                passwordError = passwordError
-            )
+            it.copy(isLoading = true)
         }
 
-        return emailError == null && passwordError == null
+        viewModelScope.launch {
+
+            try {
+
+                authRepository.login(
+                    email = state.email,
+                    password = state.password
+                )
+
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        isLoginSuccess = true
+                    )
+                }
+
+            } catch (e: Exception) {
+
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        generalError = e.localizedMessage
+                            ?: "Giriş yapılamadı."
+                    )
+                }
+
+            }
+
+        }
     }
 }
