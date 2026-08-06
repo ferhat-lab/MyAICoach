@@ -1,24 +1,57 @@
 package com.ferhat.myaicoach.data.model
 
-enum class Interest {
+enum class Interest(
+    val title: String,
+    val icon: String
+) {
 
-    SOFTWARE,
+    SOFTWARE(
+        title = "Yazılım",
+        icon = "💻"
+    ),
 
-    ARTIFICIAL_INTELLIGENCE,
+    ARTIFICIAL_INTELLIGENCE(
+        title = "Yapay Zekâ",
+        icon = "🤖"
+    ),
 
-    TECHNOLOGY,
+    TECHNOLOGY(
+        title = "Teknoloji",
+        icon = "📱"
+    ),
 
-    GAMES,
+    GAMES(
+        title = "Oyun",
+        icon = "🎮"
+    ),
 
-    MOVIES,
+    MOVIES(
+        title = "Film",
+        icon = "🎬"
+    ),
 
-    MUSIC,
+    MUSIC(
+        title = "Müzik",
+        icon = "🎵"
+    ),
 
-    SPORTS,
+    SPORTS(
+        title = "Spor",
+        icon = "⚽"
+    ),
 
-    TRAVEL,
+    TRAVEL(
+        title = "Seyahat",
+        icon = "✈️"
+    ),
 
-    BUSINESS,
+    BUSINESS(
+        title = "İş Dünyası",
+        icon = "💼"
+    ),
 
-    SCIENCE
+    SCIENCE(
+        title = "Bilim",
+        icon = "🔬"
+    )
 }

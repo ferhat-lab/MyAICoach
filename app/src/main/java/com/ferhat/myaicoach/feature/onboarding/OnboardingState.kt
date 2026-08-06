@@ -3,14 +3,17 @@ package com.ferhat.myaicoach.feature.onboarding
 import com.ferhat.myaicoach.data.model.EnglishLevel
 import com.ferhat.myaicoach.data.model.Interest
 import com.ferhat.myaicoach.data.model.LearningGoal
+import com.ferhat.myaicoach.data.model.AgeRange
 
 data class OnboardingState(
 
-    val currentStep: OnboardingStep = OnboardingStep.WELCOME,
+    val currentStep: OnboardingStep = OnboardingStep.NICKNAME,
 
     val nickname: String = "",
 
-    val age: String = "",
+    val nicknameError: String? = null,
+
+    val ageRange: AgeRange? = null,
 
     val englishLevel: EnglishLevel? = null,
 

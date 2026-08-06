@@ -8,6 +8,7 @@ import com.ferhat.myaicoach.feature.auth.login.LoginRoute
 import com.ferhat.myaicoach.feature.auth.register.RegisterScreen
 import com.ferhat.myaicoach.feature.home.HomeScreen
 import com.ferhat.myaicoach.feature.onboarding.OnboardingScreen
+import com.ferhat.myaicoach.feature.onboarding.WelcomeScreen
 
 @Composable
 fun AppNavHost() {
@@ -15,8 +16,16 @@ fun AppNavHost() {
 
     NavHost(
         navController = navController,
-        startDestination = AppRoute.Login.route
+        startDestination = AppRoute.Welcome.route
     ) {
+        composable(route = AppRoute.Welcome.route) {
+            WelcomeScreen(
+                onStartClick = {
+                    navController.navigate(AppRoute.Onboarding.route)
+                }
+            )
+        }
+
         composable(route = AppRoute.Login.route) {
             LoginRoute(
                 onLoginSuccess = {

@@ -21,6 +21,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ferhat.myaicoach.feature.onboarding.steps.NicknameStep
+import com.ferhat.myaicoach.feature.onboarding.steps.AgeStep
+import com.ferhat.myaicoach.feature.onboarding.steps.EnglishLevelStep
 
 @Composable
 fun OnboardingScreen(
@@ -32,7 +35,7 @@ fun OnboardingScreen(
     val steps = OnboardingStep.entries
     val currentStepIndex = steps.indexOf(state.currentStep)
     val progress = (currentStepIndex + 1).toFloat() / steps.size.toFloat()
-    val isFirstStep = state.currentStep == OnboardingStep.WELCOME
+    val isFirstStep = state.currentStep == OnboardingStep.NICKNAME
     val isLastStep = state.currentStep == OnboardingStep.AI_INTRO
 
     Column(
@@ -60,19 +63,49 @@ fun OnboardingScreen(
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        Text(
-            text = onboardingStepTitle(state.currentStep),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
+        when (state.currentStep) {
 
-        Spacer(modifier = Modifier.height(12.dp))
+            OnboardingStep.NICKNAME -> {
+                NicknameStep(
+                    nickname = state.nickname,
+                    onNicknameChange = viewModel::onNicknameChange
+                )
+            }
 
-        Text(
-            text = onboardingStepDescription(state.currentStep),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+            OnboardingStep.AGE -> {
+                AgeStep(
+                    selectedAgeRange = state.ageRange,
+                    onAgeRangeSelected = viewModel::onAgeRangeSelected
+                )
+            }
+
+            OnboardingStep.ENGLISH_LEVEL -> {
+                EnglishLevelStep(
+                    selectedLevel = state.englishLevel,
+                    onLevelSelected = viewModel::onEnglishLevelSelected
+                )
+            }
+
+            else -> {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = onboardingStepTitle(state.currentStep),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = onboardingStepDescription(state.currentStep),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
 
         state.errorMessage?.let { error ->
             Spacer(modifier = Modifier.height(16.dp))
@@ -125,7 +158,6 @@ private fun onboardingStepTitle(
     step: OnboardingStep
 ): String {
     return when (step) {
-        OnboardingStep.WELCOME -> "Hoş geldin"
         OnboardingStep.NICKNAME -> "Sana nasıl hitap edelim?"
         OnboardingStep.AGE -> "Kaç yaşındasın?"
         OnboardingStep.ENGLISH_LEVEL -> "İngilizce seviyen nedir?"
@@ -141,8 +173,6 @@ private fun onboardingStepDescription(
     step: OnboardingStep
 ): String {
     return when (step) {
-        OnboardingStep.WELCOME ->
-            "İngilizce koçun olmaya hazırım. Önce seni biraz tanıyalım."
 
         OnboardingStep.NICKNAME ->
             "Derslerde ve konuşma pratiğinde kullanacağımız bir isim seç."
