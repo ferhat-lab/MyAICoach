@@ -67,21 +67,21 @@ fun OnboardingScreen(
 
             OnboardingStep.NICKNAME -> {
                 NicknameStep(
-                    nickname = state.nickname,
+                    nickname = state.userProfile.nickname,
                     onNicknameChange = viewModel::onNicknameChange
                 )
             }
 
             OnboardingStep.AGE -> {
                 AgeStep(
-                    selectedAgeRange = state.ageRange,
+                    selectedAgeRange = state.userProfile.ageRange,
                     onAgeRangeSelected = viewModel::onAgeRangeSelected
                 )
             }
 
             OnboardingStep.ENGLISH_LEVEL -> {
                 EnglishLevelStep(
-                    selectedLevel = state.englishLevel,
+                    selectedLevel = state.userProfile.englishLevel,
                     onLevelSelected = viewModel::onEnglishLevelSelected
                 )
             }

@@ -18,7 +18,7 @@ class OnboardingViewModel : ViewModel() {
 
         if (
             state.currentStep == OnboardingStep.NICKNAME &&
-            state.nickname.isBlank()
+            state.userProfile.nickname.isBlank()
         ) {
             _uiState.update {
                 it.copy(
@@ -30,7 +30,7 @@ class OnboardingViewModel : ViewModel() {
 
         if (
             state.currentStep == OnboardingStep.AGE &&
-            state.ageRange == null
+            state.userProfile.ageRange == null
         ) {
             _uiState.update {
                 it.copy(
@@ -42,7 +42,7 @@ class OnboardingViewModel : ViewModel() {
 
         if (
             state.currentStep == OnboardingStep.ENGLISH_LEVEL &&
-            state.englishLevel == null
+            state.userProfile.englishLevel == null
         ) {
             _uiState.update {
                 it.copy(
@@ -82,7 +82,9 @@ class OnboardingViewModel : ViewModel() {
     fun onNicknameChange(nickname: String) {
         _uiState.update {
             it.copy(
-                nickname = nickname,
+                userProfile = it.userProfile.copy(
+                    nickname = nickname
+                ),
                 errorMessage = null
             )
         }
@@ -91,18 +93,20 @@ class OnboardingViewModel : ViewModel() {
     fun onAgeRangeSelected(ageRange: AgeRange) {
         _uiState.update {
             it.copy(
-                ageRange = ageRange,
+                userProfile = it.userProfile.copy(
+                    ageRange = ageRange
+                ),
                 errorMessage = null
             )
         }
     }
 
-    fun onEnglishLevelSelected(
-        level: EnglishLevel
-    ) {
+    fun onEnglishLevelSelected(level: EnglishLevel) {
         _uiState.update {
             it.copy(
-                englishLevel = level,
+                userProfile = it.userProfile.copy(
+                    englishLevel = level
+                ),
                 errorMessage = null
             )
         }
