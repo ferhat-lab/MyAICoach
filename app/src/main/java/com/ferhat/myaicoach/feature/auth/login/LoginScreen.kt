@@ -31,6 +31,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun LoginRoute(
@@ -41,18 +42,18 @@ fun LoginRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    LaunchedEffect(state.isLoginSuccess) {
+        if (state.isLoginSuccess) {
+            onLoginSuccess()
+        }
+    }
+
     LoginScreen(
         state = state,
         onEmailChange = viewModel::onEmailChange,
         onPasswordChange = viewModel::onPasswordChange,
         onPasswordVisibilityChange = viewModel::onPasswordVisibilityChange,
-        onLoginClick = {
-            val isValid = viewModel.login()
-
-            if (isValid) {
-                onLoginSuccess()
-            }
-        },
+        onLoginClick = viewModel::login,
         onRegisterClick = onRegisterClick,
         onForgotPasswordClick = onForgotPasswordClick
     )

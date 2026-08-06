@@ -6,6 +6,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.ferhat.myaicoach.feature.auth.login.LoginRoute
 import com.ferhat.myaicoach.feature.auth.register.RegisterScreen
+import com.ferhat.myaicoach.feature.home.HomeScreen
+import com.ferhat.myaicoach.feature.onboarding.OnboardingScreen
 
 @Composable
 fun AppNavHost() {
@@ -18,7 +20,11 @@ fun AppNavHost() {
         composable(route = AppRoute.Login.route) {
             LoginRoute(
                 onLoginSuccess = {
-
+                    navController.navigate(AppRoute.Onboarding.route) {
+                        popUpTo(AppRoute.Login.route) {
+                            inclusive = true
+                        }
+                    }
                 },
                 onRegisterClick = {
                     navController.navigate(AppRoute.Register.route)
@@ -42,6 +48,22 @@ fun AppNavHost() {
                     }
                 }
             )
+        }
+
+        composable(route = AppRoute.Onboarding.route) {
+            OnboardingScreen(
+                onCompleteClick = {
+                    navController.navigate(AppRoute.Home.route) {
+                        popUpTo(AppRoute.Onboarding.route) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
+        }
+
+        composable(route = AppRoute.Home.route) {
+            HomeScreen()
         }
     }
 }
