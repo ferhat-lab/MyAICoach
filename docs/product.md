@@ -1,30 +1,100 @@
-# Ürün Vizyonu
+# My AI Coach
 
-My AI Coach sadece bir İngilizce öğrenme uygulaması değildir.
+## Vision
 
-Amacımız;
-
-Kullanıcının seviyesini bilen,
-öğrendiklerini hatırlayan,
-konuşma pratiği yaptıran,
-günlük motivasyon sağlayan
-kişisel bir yapay zeka koçu geliştirmektir.
+My AI Coach is an AI-powered English learning application designed to make daily English practice feel like interacting with a personal coach rather than studying with a traditional course.
 
 ---
 
-## Hedef Kitle
+# Mission
 
-- Üniversite öğrencileri
-- Yazılım geliştiriciler
-- Profesyoneller
-- İngilizce öğrenmek isteyen herkes
+Help users build a sustainable English learning habit through:
+
+- Artificial Intelligence
+- Personalized lessons
+- Gamification
+- Speaking practice
+- Daily goals
 
 ---
 
-## Temel Değerler
+# Target Audience
 
-- Kişiselleştirme
-- Süreklilik
-- Motivasyon
-- Yapay zeka desteği
-- Eğlenceli öğrenme
+Primary
+
+- University students
+- Junior Software Engineers
+- Professionals
+
+Secondary
+
+- Travelers
+- Language learners
+
+---
+
+# Core Features
+
+Authentication
+
+Onboarding
+
+AI Coach
+
+Daily Lessons
+
+Speaking Practice
+
+Writing
+
+Reading
+
+Listening
+
+Gamification
+
+Progress Tracking
+
+---
+
+# Unique Selling Points
+
+Personal AI Coach
+
+Adaptive Learning
+
+Conversation Memory
+
+Daily Motivation
+
+Modern UI
+
+---
+
+# AI Character
+
+Name
+
+Vani
+
+Role
+
+Personal English Coach
+
+Personality
+
+Friendly
+
+Patient
+
+Motivating
+
+Professional
+
+---
+
+# Long-Term Vision
+
+Become one of the most personalized AI English learning applications.
+
+The application should feel like learning with a real coach instead of using a traditional language app.

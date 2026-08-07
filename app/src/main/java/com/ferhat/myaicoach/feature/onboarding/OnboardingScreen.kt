@@ -27,7 +27,7 @@ import com.ferhat.myaicoach.feature.onboarding.steps.EnglishLevelStep
 import com.ferhat.myaicoach.feature.onboarding.steps.InterestStep
 import com.ferhat.myaicoach.feature.onboarding.steps.LearningGoalStep
 import com.ferhat.myaicoach.feature.onboarding.steps.DailyGoalStep
-import com.ferhat.myaicoach.feature.onboarding.steps.CharacterStep
+import com.ferhat.myaicoach.feature.onboarding.steps.AiIntroStep
 
 @Composable
 fun OnboardingScreen(

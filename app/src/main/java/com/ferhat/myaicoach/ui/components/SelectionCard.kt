@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun SelectionCard(
@@ -21,34 +22,37 @@ fun SelectionCard(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
 
+        shape = RoundedCornerShape(20.dp),
+
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (selected) 8.dp else 3.dp
+        ),
+
         border = BorderStroke(
             width = if (selected) 2.dp else 1.dp,
-            color =
-                if (selected)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.outline
+            color = if (selected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.outlineVariant
+            }
         ),
 
         colors = CardDefaults.cardColors(
-            containerColor =
-                if (selected)
-                    MaterialTheme.colorScheme.primaryContainer
-                else
-                    MaterialTheme.colorScheme.surface
+            containerColor = if (selected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
         )
     ) {
-
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
@@ -58,7 +62,8 @@ fun SelectionCard(
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 6.dp)
+                modifier = Modifier.padding(top = 6.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

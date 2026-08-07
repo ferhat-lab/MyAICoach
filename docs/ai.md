@@ -1,26 +1,21 @@
-# Yapay Zeka Tasarımı
+User
 
-## Amaç
+↓
 
-Kullanıcıya gerçek bir İngilizce öğretmeni gibi davranan,
-kişiselleştirilmiş bir yapay zeka geliştirmek.
+Prompt Builder
 
----
+↓
 
-## Yapay Zekanın Görevleri
+Gemini
 
-- Yeni kelime öğretmek
-- Önceki dersleri hatırlamak
-- Konuşma pratiği yaptırmak
-- Telaffuzu değerlendirmek
-- Kullanıcıyı motive etmek
-- Seviyeye göre cevap vermek
+↓
 
----
+Memory
 
-## Gelecekte Kullanılabilecek Modeller
+↓
 
-- Qwen
-- Gemma
-- Phi
-- VoxCPM2
+TTS
+
+↓
+
+Animation

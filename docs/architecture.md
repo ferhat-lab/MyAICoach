@@ -1,60 +1,53 @@
-# Mimari
+# Architecture
 
-## Android
+MVVM
 
-- Kotlin
-- Jetpack Compose
-- MVVM
-- Navigation Compose
-- Firebase Authentication
-- Firestore
+↓
+
+Presentation
+
+↓
+
+ViewModel
+
+↓
+
+Repository
+
+↓
+
+Firebase
+
+↓
+
+Local Database
+
+↓
+
+AI Services
+
+---
+
+## Layers
+
+Presentation
+
+- Compose
+- Navigation
+
+Domain
+
+- UseCases
+- Models
+
+Data
+
+- Firebase
 - Room
-- Retrofit
+- Repository
 
----
+Core
 
-## Backend
-
-Docker
-
-↓
-
-FastAPI
-
-↓
-
-LLM
-
-↓
-
-TTS
-
-↓
-
-STT
-
----
-
-## Veri Akışı
-
-Android
-
-↓
-
-API
-
-↓
-
-LLM
-
-↓
-
-Yanıt
-
-↓
-
-TTS
-
-↓
-
-Ses
+- Components
+- Theme
+- Utils

@@ -1,27 +1,188 @@
-# Arayüz Tasarım İlkeleri
+# My AI Coach UI Design System
 
-## Tema
+## Design Vision
 
-- Koyu tema
+My AI Coach;
+
 - Modern
-- Minimal
-- Premium görünüm
+- Premium
+- Friendly
+- Calm
+- AI-focused
+
+bir deneyim sunmalıdır.
+
+Kullanıcı uygulamayı açtığında güven veren,
+temiz ve sıcak bir arayüz hissetmelidir.
 
 ---
 
-## İlham Alınan Uygulamalar
+# Design Language
 
-- Duolingo
-- Praktika
-- ChatGPT
-- Elsa Speak
+Material 3 temel alınacaktır.
+
+Tamamen Material görünümü kullanılmayacaktır.
+
+Material 3 üzerine;
+
+- Soft UI
+- Yumuşak gölgeler
+- Mikro animasyonlar
+
+eklenecektir.
+
+Glassmorphism kullanılmayacaktır.
+
+Tam Neumorphism kullanılmayacaktır.
 
 ---
 
-## Tasarım Kuralları
+# Colors
 
-- Her ekranda tek ana işlem
-- Büyük dokunma alanları
-- Akıcı animasyonlar
-- Kullanıcıyı yormayan renkler
-- Oyun hissi veren küçük detaylar
+Primary
+
+Mor
+
+Accent
+
+Turkuaz
+
+Background
+
+Koyu Lacivert
+
+Surface
+
+Koyu Gri
+
+Success
+
+Yeşil
+
+Error
+
+Kırmızı
+
+---
+
+# Radius
+
+Cards
+
+20dp
+
+Buttons
+
+18dp
+
+TextField
+
+18dp
+
+Bottom Sheet
+
+28dp
+
+---
+
+# Shadows
+
+Soft Shadow kullanılacaktır.
+
+Kartlar çok yüksek görünmeyecektir.
+
+Yumuşak bir derinlik hissi verilecektir.
+
+---
+
+# Components
+
+Reusable Components
+
+- SelectionCard
+- PrimaryButton
+- SecondaryButton
+- AppTextField
+- ProgressHeader
+- AppTopBar
+- LoadingIndicator
+
+---
+
+# Animations
+
+Kullanılacak:
+
+- Fade In
+- Scale
+- Color Transition
+
+Kullanılmayacak:
+
+- Gereksiz Bounce
+- Sert animasyonlar
+
+---
+
+# AI Character
+
+İlk sürümde tek karakter kullanılacaktır.
+
+Adı:
+
+Vani
+
+Vani uygulamanın marka yüzü olacaktır.
+
+Karakter seçimi bulunmayacaktır.
+
+İleride roadmap kapsamında yeni karakterler eklenebilir.
+
+---
+
+# Illustration Style
+
+Flat Illustration
+
+Minimal
+
+Rounded
+
+Modern
+
+Aynı renk paleti kullanılacaktır.
+
+---
+
+# UX Principles
+
+Kullanıcı hiçbir ekranda
+ne yapacağını düşünmemelidir.
+
+Seçilebilir öğeler
+hemen fark edilmelidir.
+
+Animasyonlar kullanıcıyı bekletmek için değil,
+akışı hissettirmek için kullanılacaktır.
+
+---
+
+# Accessibility
+
+Yüksek kontrast korunacaktır.
+
+Minimum dokunma alanı:
+
+48dp
+
+Yazılar okunabilir büyüklükte olacaktır.
+
+---
+
+# Performance
+
+Animasyonlar 60 FPS hedefiyle geliştirilecektir.
+
+Gereksiz blur efektlerinden kaçınılacaktır.
+
+Ağır Glassmorphism kullanılmayacaktır.
