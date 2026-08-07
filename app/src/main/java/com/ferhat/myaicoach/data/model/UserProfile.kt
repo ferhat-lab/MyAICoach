@@ -13,6 +13,4 @@ data class UserProfile(
     val learningGoal: LearningGoal? = null,
 
     val dailyGoalMinutes: Int? = null,
-
-    val selectedCharacter: String? = null
 )

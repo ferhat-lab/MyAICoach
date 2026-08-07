@@ -7,6 +7,5 @@ enum class OnboardingStep {
     INTERESTS,
     LEARNING_GOAL,
     DAILY_GOAL,
-    CHARACTER,
     AI_INTRO
 }

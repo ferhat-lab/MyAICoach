@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.update
 import com.ferhat.myaicoach.data.model.EnglishLevel
 import com.ferhat.myaicoach.data.model.AgeRange
 import com.ferhat.myaicoach.data.model.Interest
+import com.ferhat.myaicoach.data.model.LearningGoal
 
 class OnboardingViewModel : ViewModel() {
 
@@ -60,6 +61,30 @@ class OnboardingViewModel : ViewModel() {
             _uiState.update {
                 it.copy(
                     errorMessage = "Devam etmek için en az 3 ilgi alanı seç."
+                )
+            }
+            return
+        }
+
+        if (
+            state.currentStep == OnboardingStep.LEARNING_GOAL &&
+            state.userProfile.learningGoal == null
+        ) {
+            _uiState.update {
+                it.copy(
+                    errorMessage = "Lütfen İngilizce öğrenme hedefini seç."
+                )
+            }
+            return
+        }
+
+        if (
+            state.currentStep == OnboardingStep.DAILY_GOAL &&
+            state.userProfile.dailyGoalMinutes == null
+        ) {
+            _uiState.update {
+                it.copy(
+                    errorMessage = "Lütfen günlük çalışma süreni seç."
                 )
             }
             return
@@ -155,6 +180,28 @@ class OnboardingViewModel : ViewModel() {
                 } else {
                     null
                 }
+            )
+        }
+    }
+
+    fun onLearningGoalSelected(goal: LearningGoal) {
+        _uiState.update {
+            it.copy(
+                userProfile = it.userProfile.copy(
+                    learningGoal = goal
+                ),
+                errorMessage = null
+            )
+        }
+    }
+
+    fun onDailyGoalSelected(minutes: Int) {
+        _uiState.update {
+            it.copy(
+                userProfile = it.userProfile.copy(
+                    dailyGoalMinutes = minutes
+                ),
+                errorMessage = null
             )
         }
     }

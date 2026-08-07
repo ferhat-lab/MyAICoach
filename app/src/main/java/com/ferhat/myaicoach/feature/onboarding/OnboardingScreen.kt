@@ -25,6 +25,9 @@ import com.ferhat.myaicoach.feature.onboarding.steps.NicknameStep
 import com.ferhat.myaicoach.feature.onboarding.steps.AgeStep
 import com.ferhat.myaicoach.feature.onboarding.steps.EnglishLevelStep
 import com.ferhat.myaicoach.feature.onboarding.steps.InterestStep
+import com.ferhat.myaicoach.feature.onboarding.steps.LearningGoalStep
+import com.ferhat.myaicoach.feature.onboarding.steps.DailyGoalStep
+import com.ferhat.myaicoach.feature.onboarding.steps.CharacterStep
 
 @Composable
 fun OnboardingScreen(
@@ -91,6 +94,20 @@ fun OnboardingScreen(
                 InterestStep(
                     selectedInterests = state.userProfile.interests,
                     onInterestClick = viewModel::toggleInterest
+                )
+            }
+
+            OnboardingStep.LEARNING_GOAL -> {
+                LearningGoalStep(
+                    selectedGoal = state.userProfile.learningGoal,
+                    onGoalSelected = viewModel::onLearningGoalSelected
+                )
+            }
+
+            OnboardingStep.DAILY_GOAL -> {
+                DailyGoalStep(
+                    selectedMinutes = state.userProfile.dailyGoalMinutes,
+                    onGoalSelected = viewModel::onDailyGoalSelected
                 )
             }
 
@@ -172,7 +189,6 @@ private fun onboardingStepTitle(
         OnboardingStep.INTERESTS -> "Neler ilgini çekiyor?"
         OnboardingStep.LEARNING_GOAL -> "İngilizce öğrenme hedefin ne?"
         OnboardingStep.DAILY_GOAL -> "Her gün ne kadar çalışalım?"
-        OnboardingStep.CHARACTER -> "Koç karakterini seç"
         OnboardingStep.AI_INTRO -> "Koçun hazır"
     }
 }
@@ -199,9 +215,6 @@ private fun onboardingStepDescription(
 
         OnboardingStep.DAILY_GOAL ->
             "10, 20, 30 veya daha fazla dakikalık günlük çalışma hedefi seç."
-
-        OnboardingStep.CHARACTER ->
-            "Derslerde sana eşlik edecek yapay zekâ koçunu belirle."
 
         OnboardingStep.AI_INTRO ->
             "Bilgilerini aldım. Sana özel öğrenme planını oluşturmaya hazırım."

@@ -44,3 +44,11 @@
 - [ ] Analytics
 - [ ] Crashlytics
 - [ ] Subscription
+
+## Phase 7
+### Character System
+
+- [ ] Multiple AI Characters
+- [ ] Voice Profiles
+- [ ] Character Personalities
+- [ ] Character Animations
