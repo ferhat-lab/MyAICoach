@@ -1,17 +1,46 @@
-# Project Documentation
+# My AI Coach
 
-Bu klasör My AI Coach projesinin teknik dokümantasyonunu içerir.
+An AI-powered English learning application built with Kotlin, Jetpack Compose and Firebase.
 
-## İçerik
+## Features
+
+- AI English Coach
+- Personalized Learning
+- Speaking Practice
+- Reading
+- Writing
+- Listening
+- Daily Goals
+- Gamification
+
+## Tech Stack
+
+- Kotlin
+- Jetpack Compose
+- MVVM
+- Firebase Authentication
+- Firestore
+- Room
+- Gemini
+- Docker
+
+## Project Structure
+
+app/
+docs/
+
+## Documentation
+
+Detailed documentation can be found in the `docs` folder.
 
 - Architecture
-- Product Decisions
+- Product
 - Roadmap
-- Meeting Notes
+- Decisions
 - AI
 - UI Design System
 - User Flows
 
-Kod değişebilir.
+## Status
 
-Ancak bu dokümanlar projenin neden bu şekilde geliştirildiğini açıklar.
+🚧 Currently under active development.
