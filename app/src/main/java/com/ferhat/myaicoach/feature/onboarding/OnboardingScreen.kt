@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ferhat.myaicoach.feature.onboarding.steps.NicknameStep
 import com.ferhat.myaicoach.feature.onboarding.steps.AgeStep
 import com.ferhat.myaicoach.feature.onboarding.steps.EnglishLevelStep
+import com.ferhat.myaicoach.feature.onboarding.steps.InterestStep
 
 @Composable
 fun OnboardingScreen(
@@ -83,6 +84,13 @@ fun OnboardingScreen(
                 EnglishLevelStep(
                     selectedLevel = state.userProfile.englishLevel,
                     onLevelSelected = viewModel::onEnglishLevelSelected
+                )
+            }
+
+            OnboardingStep.INTERESTS -> {
+                InterestStep(
+                    selectedInterests = state.userProfile.interests,
+                    onInterestClick = viewModel::toggleInterest
                 )
             }
 

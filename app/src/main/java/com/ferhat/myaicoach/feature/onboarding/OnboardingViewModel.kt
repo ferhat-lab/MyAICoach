@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import com.ferhat.myaicoach.data.model.EnglishLevel
 import com.ferhat.myaicoach.data.model.AgeRange
+import com.ferhat.myaicoach.data.model.Interest
 
 class OnboardingViewModel : ViewModel() {
 
@@ -47,6 +48,18 @@ class OnboardingViewModel : ViewModel() {
             _uiState.update {
                 it.copy(
                     errorMessage = "Lütfen İngilizce seviyeni seç."
+                )
+            }
+            return
+        }
+
+        if (
+            state.currentStep == OnboardingStep.INTERESTS &&
+            state.userProfile.interests.size < 3
+        ) {
+            _uiState.update {
+                it.copy(
+                    errorMessage = "Devam etmek için en az 3 ilgi alanı seç."
                 )
             }
             return
@@ -108,6 +121,40 @@ class OnboardingViewModel : ViewModel() {
                     englishLevel = level
                 ),
                 errorMessage = null
+            )
+        }
+    }
+
+    fun toggleInterest(interest: Interest) {
+        _uiState.update { state ->
+            val currentInterests = state.userProfile.interests
+
+            val updatedInterests = when {
+                interest in currentInterests -> {
+                    currentInterests - interest
+                }
+
+                currentInterests.size < 5 -> {
+                    currentInterests + interest
+                }
+
+                else -> {
+                    currentInterests
+                }
+            }
+
+            state.copy(
+                userProfile = state.userProfile.copy(
+                    interests = updatedInterests
+                ),
+                errorMessage = if (
+                    interest !in currentInterests &&
+                    currentInterests.size >= 5
+                ) {
+                    "En fazla 5 ilgi alanı seçebilirsin."
+                } else {
+                    null
+                }
             )
         }
     }
