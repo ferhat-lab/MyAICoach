@@ -9,6 +9,7 @@ import com.ferhat.myaicoach.feature.auth.register.RegisterScreen
 import com.ferhat.myaicoach.feature.home.HomeScreen
 import com.ferhat.myaicoach.feature.onboarding.OnboardingScreen
 import com.ferhat.myaicoach.feature.onboarding.WelcomeScreen
+import com.ferhat.myaicoach.feature.lesson.LessonScreen
 
 @Composable
 fun AppNavHost() {
@@ -75,7 +76,26 @@ fun AppNavHost() {
         }
 
         composable(route = AppRoute.Home.route) {
-            HomeScreen()
+            HomeScreen(
+                onLessonClick = { stage ->
+                    navController.navigate(
+                        AppRoute.Lesson.createRoute(stage.name)
+                    )
+                }
+            )
+        }
+
+        composable(
+            route = AppRoute.Lesson.route
+        ) { backStackEntry ->
+
+            val stageName = backStackEntry.arguments
+                ?.getString("stage")
+                ?: return@composable
+
+            LessonScreen(
+                stageName = stageName
+            )
         }
     }
 }

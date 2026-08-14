@@ -1,5 +1,6 @@
 package com.ferhat.myaicoach.feature.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -18,15 +21,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.clickable
 
 @Composable
-fun HomeScreen() {
-
-    // Temporary mock data.
-    // Later this will come from HomeViewModel.
+fun HomeScreen(
+    onLessonClick: (LessonStage) -> Unit
+) {
     val nickname = "Ferhat"
     val streakDays = 7
     val xp = 1240
@@ -63,7 +62,6 @@ fun HomeScreen() {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             HomeStat(
                 value = "$streakDays",
                 label = "🔥 Seri"
@@ -90,7 +88,9 @@ fun HomeScreen() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LessonJourney()
+        LessonJourney(
+            onLessonClick = onLessonClick
+        )
     }
 }
 
@@ -119,8 +119,9 @@ private fun HomeStat(
 }
 
 @Composable
-private fun LessonJourney() {
-
+private fun LessonJourney(
+    onLessonClick: (LessonStage) -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -140,7 +141,7 @@ private fun LessonJourney() {
             title = "Pratik Yap",
             description = "Öğrendiklerini kullan",
             onClick = {
-                // Bir sonraki adımda lesson ekranına yönlendireceğiz.
+                onLessonClick(LessonStage.PRACTICE)
             }
         )
 
@@ -170,7 +171,6 @@ private fun JourneyItem(
     description: String,
     onClick: () -> Unit
 ) {
-
     val icon = when (status) {
         LessonStageStatus.COMPLETED -> "✓"
         LessonStageStatus.CURRENT -> "●"
@@ -200,14 +200,12 @@ private fun JourneyItem(
         ),
         shape = MaterialTheme.shapes.medium
     ) {
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             Text(
                 text = icon,
                 style = MaterialTheme.typography.titleLarge
@@ -218,7 +216,6 @@ private fun JourneyItem(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,

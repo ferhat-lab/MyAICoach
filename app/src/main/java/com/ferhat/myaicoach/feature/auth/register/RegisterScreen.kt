@@ -37,6 +37,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.focus.onFocusChanged
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
@@ -45,6 +52,15 @@ fun RegisterScreen(
     viewModel: RegisterViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val passwordBringIntoViewRequester = remember {
+        BringIntoViewRequester()
+    }
+
+    val confirmPasswordBringIntoViewRequester = remember {
+        BringIntoViewRequester()
+    }
+
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(state.isRegisterSuccess) {
         if (state.isRegisterSuccess) {
@@ -142,7 +158,17 @@ fun RegisterScreen(
         OutlinedTextField(
             value = state.password,
             onValueChange = viewModel::onPasswordChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .bringIntoViewRequester(passwordBringIntoViewRequester)
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused) {
+                        coroutineScope.launch {
+                            delay(250)
+                            passwordBringIntoViewRequester.bringIntoView()
+                        }
+                    }
+                },
             label = {
                 Text("Şifre")
             },
@@ -187,7 +213,17 @@ fun RegisterScreen(
         OutlinedTextField(
             value = state.confirmPassword,
             onValueChange = viewModel::onConfirmPasswordChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .bringIntoViewRequester(confirmPasswordBringIntoViewRequester)
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused) {
+                        coroutineScope.launch {
+                            delay(250)
+                            confirmPasswordBringIntoViewRequester.bringIntoView()
+                        }
+                    }
+                },
             label = {
                 Text("Şifre Tekrar")
             },

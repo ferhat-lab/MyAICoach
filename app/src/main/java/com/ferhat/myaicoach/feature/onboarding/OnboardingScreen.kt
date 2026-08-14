@@ -34,6 +34,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 @Composable
 fun OnboardingScreen(
@@ -51,13 +55,16 @@ fun OnboardingScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .imePadding()
+            .navigationBarsPadding()
             .padding(
                 horizontal = 24.dp,
                 vertical = 32.dp
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
-    ) {
+    )  {
         Text(
             text = "${currentStepIndex + 1} / ${steps.size}",
             style = MaterialTheme.typography.labelLarge,
@@ -143,7 +150,7 @@ fun OnboardingScreen(
                     )
                 }
 
-                OnboardingStep.INTERESTS -> {
+                    OnboardingStep.INTERESTS -> {
                     InterestStep(
                         selectedInterests = state.userProfile.interests,
                         onInterestClick = viewModel::toggleInterest

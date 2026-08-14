@@ -11,4 +11,11 @@ sealed class AppRoute(val route: String) {
     data object Onboarding : AppRoute("onboarding")
 
     data object Home : AppRoute("home")
+
+    data object Lesson : AppRoute("lesson/{stage}") {
+
+        fun createRoute(stage: String): String {
+            return "lesson/$stage"
+        }
+    }
 }
