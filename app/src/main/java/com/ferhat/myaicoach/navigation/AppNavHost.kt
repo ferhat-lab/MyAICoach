@@ -22,6 +22,9 @@ fun AppNavHost() {
             WelcomeScreen(
                 onStartClick = {
                     navController.navigate(AppRoute.Onboarding.route)
+                },
+                onExistingAccountClick = {
+                    navController.navigate(AppRoute.Login.route)
                 }
             )
         }
@@ -29,7 +32,7 @@ fun AppNavHost() {
         composable(route = AppRoute.Login.route) {
             LoginRoute(
                 onLoginSuccess = {
-                    navController.navigate(AppRoute.Onboarding.route) {
+                    navController.navigate(AppRoute.Home.route) {
                         popUpTo(AppRoute.Login.route) {
                             inclusive = true
                         }
@@ -62,7 +65,7 @@ fun AppNavHost() {
         composable(route = AppRoute.Onboarding.route) {
             OnboardingScreen(
                 onCompleteClick = {
-                    navController.navigate(AppRoute.Home.route) {
+                    navController.navigate(AppRoute.Login.route) {
                         popUpTo(AppRoute.Onboarding.route) {
                             inclusive = true
                         }

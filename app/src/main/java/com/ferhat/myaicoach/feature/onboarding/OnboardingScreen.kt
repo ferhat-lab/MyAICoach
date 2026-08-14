@@ -17,7 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -28,6 +27,13 @@ import com.ferhat.myaicoach.feature.onboarding.steps.InterestStep
 import com.ferhat.myaicoach.feature.onboarding.steps.LearningGoalStep
 import com.ferhat.myaicoach.feature.onboarding.steps.DailyGoalStep
 import com.ferhat.myaicoach.feature.onboarding.steps.AiIntroStep
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 
 @Composable
 fun OnboardingScreen(
@@ -67,66 +73,100 @@ fun OnboardingScreen(
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        when (state.currentStep) {
+        AnimatedContent(
+            targetState = state.currentStep,
+            transitionSpec = {
+                val initialIndex = steps.indexOf(initialState)
+                val targetIndex = steps.indexOf(targetState)
 
-            OnboardingStep.NICKNAME -> {
-                NicknameStep(
-                    nickname = state.userProfile.nickname,
-                    onNicknameChange = viewModel::onNicknameChange
-                )
-            }
+                if (targetIndex > initialIndex) {
+                    (
+                            slideInHorizontally(
+                                animationSpec = tween(250)
+                            ) { width ->
+                                width / 4
+                            } + fadeIn(
+                                animationSpec = tween(250)
+                            )
+                            ) togetherWith (
+                            slideOutHorizontally(
+                                animationSpec = tween(250)
+                            ) { width ->
+                                -width / 4
+                            } + fadeOut(
+                                animationSpec = tween(200)
+                            )
+                            )
+                } else {
+                    (
+                            slideInHorizontally(
+                                animationSpec = tween(250)
+                            ) { width ->
+                                -width / 4
+                            } + fadeIn(
+                                animationSpec = tween(250)
+                            )
+                            ) togetherWith (
+                            slideOutHorizontally(
+                                animationSpec = tween(250)
+                            ) { width ->
+                                width / 4
+                            } + fadeOut(
+                                animationSpec = tween(200)
+                            )
+                            )
+                }
+            },
+            label = "onboardingStepTransition"
+        ) { currentStep ->
 
-            OnboardingStep.AGE -> {
-                AgeStep(
-                    selectedAgeRange = state.userProfile.ageRange,
-                    onAgeRangeSelected = viewModel::onAgeRangeSelected
-                )
-            }
+            when (currentStep) {
 
-            OnboardingStep.ENGLISH_LEVEL -> {
-                EnglishLevelStep(
-                    selectedLevel = state.userProfile.englishLevel,
-                    onLevelSelected = viewModel::onEnglishLevelSelected
-                )
-            }
-
-            OnboardingStep.INTERESTS -> {
-                InterestStep(
-                    selectedInterests = state.userProfile.interests,
-                    onInterestClick = viewModel::toggleInterest
-                )
-            }
-
-            OnboardingStep.LEARNING_GOAL -> {
-                LearningGoalStep(
-                    selectedGoal = state.userProfile.learningGoal,
-                    onGoalSelected = viewModel::onLearningGoalSelected
-                )
-            }
-
-            OnboardingStep.DAILY_GOAL -> {
-                DailyGoalStep(
-                    selectedMinutes = state.userProfile.dailyGoalMinutes,
-                    onGoalSelected = viewModel::onDailyGoalSelected
-                )
-            }
-
-            else -> {
-                Column(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = onboardingStepTitle(state.currentStep),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
+                OnboardingStep.NICKNAME -> {
+                    NicknameStep(
+                        nickname = state.userProfile.nickname,
+                        onNicknameChange = viewModel::onNicknameChange
                     )
+                }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                OnboardingStep.AGE -> {
+                    AgeStep(
+                        selectedAgeRange = state.userProfile.ageRange,
+                        onAgeRangeSelected = viewModel::onAgeRangeSelected
+                    )
+                }
 
-                    Text(
-                        text = onboardingStepDescription(state.currentStep),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                OnboardingStep.ENGLISH_LEVEL -> {
+                    EnglishLevelStep(
+                        selectedLevel = state.userProfile.englishLevel,
+                        onLevelSelected = viewModel::onEnglishLevelSelected
+                    )
+                }
+
+                OnboardingStep.INTERESTS -> {
+                    InterestStep(
+                        selectedInterests = state.userProfile.interests,
+                        onInterestClick = viewModel::toggleInterest
+                    )
+                }
+
+                OnboardingStep.LEARNING_GOAL -> {
+                    LearningGoalStep(
+                        selectedGoal = state.userProfile.learningGoal,
+                        onGoalSelected = viewModel::onLearningGoalSelected
+                    )
+                }
+
+                OnboardingStep.DAILY_GOAL -> {
+                    DailyGoalStep(
+                        selectedMinutes = state.userProfile.dailyGoalMinutes,
+                        onGoalSelected = viewModel::onDailyGoalSelected
+                    )
+                }
+
+                OnboardingStep.AI_INTRO -> {
+                    AiIntroStep(
+                        userProfile = state.userProfile
                     )
                 }
             }
@@ -151,7 +191,8 @@ fun OnboardingScreen(
             if (!isFirstStep) {
                 OutlinedButton(
                     onClick = viewModel::previousStep,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !state.isLoading
                 ) {
                     Text(text = "Geri")
                 }
@@ -165,58 +206,17 @@ fun OnboardingScreen(
                         viewModel.nextStep()
                     }
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enabled = !state.isLoading
             ) {
                 Text(
                     text = if (isLastStep) {
-                        "Başla"
+                        "Giriş Yaparak Devam Et"
                     } else {
                         "Devam Et"
                     }
                 )
             }
         }
-    }
-}
-
-private fun onboardingStepTitle(
-    step: OnboardingStep
-): String {
-    return when (step) {
-        OnboardingStep.NICKNAME -> "Sana nasıl hitap edelim?"
-        OnboardingStep.AGE -> "Kaç yaşındasın?"
-        OnboardingStep.ENGLISH_LEVEL -> "İngilizce seviyen nedir?"
-        OnboardingStep.INTERESTS -> "Neler ilgini çekiyor?"
-        OnboardingStep.LEARNING_GOAL -> "İngilizce öğrenme hedefin ne?"
-        OnboardingStep.DAILY_GOAL -> "Her gün ne kadar çalışalım?"
-        OnboardingStep.AI_INTRO -> "Koçun hazır"
-    }
-}
-
-private fun onboardingStepDescription(
-    step: OnboardingStep
-): String {
-    return when (step) {
-
-        OnboardingStep.NICKNAME ->
-            "Derslerde ve konuşma pratiğinde kullanacağımız bir isim seç."
-
-        OnboardingStep.AGE ->
-            "Yaşına uygun örnekler ve ders içerikleri hazırlayacağız."
-
-        OnboardingStep.ENGLISH_LEVEL ->
-            "A1, A2, B1 veya B2 seviyelerinden sana en uygun olanı seç."
-
-        OnboardingStep.INTERESTS ->
-            "Ders örneklerini sevdiğin konulara göre kişiselleştireceğiz."
-
-        OnboardingStep.LEARNING_GOAL ->
-            "İş, seyahat, okul veya günlük konuşma gibi bir hedef belirle."
-
-        OnboardingStep.DAILY_GOAL ->
-            "10, 20, 30 veya daha fazla dakikalık günlük çalışma hedefi seç."
-
-        OnboardingStep.AI_INTRO ->
-            "Bilgilerini aldım. Sana özel öğrenme planını oluşturmaya hazırım."
     }
 }

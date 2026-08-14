@@ -16,10 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.TextButton
 
 @Composable
 fun WelcomeScreen(
-    onStartClick: () -> Unit
+    onStartClick: () -> Unit,
+    onExistingAccountClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -80,6 +82,17 @@ fun WelcomeScreen(
                 .height(52.dp)
         ) {
             Text(text = "Başlayalım")
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextButton(
+            onClick = onExistingAccountClick
+        ) {
+            Text(
+                text = "Zaten hesabım var",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }

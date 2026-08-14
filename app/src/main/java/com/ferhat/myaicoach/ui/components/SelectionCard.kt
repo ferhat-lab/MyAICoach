@@ -1,5 +1,7 @@
 package com.ferhat.myaicoach.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -13,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun SelectionCard(
@@ -22,32 +23,48 @@ fun SelectionCard(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+
+    val containerColor = animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
+        label = "selectionCardColor"
+    )
+
+    val borderColor = animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.outlineVariant
+        },
+        label = "selectionCardBorder"
+    )
+
+    val elevation = animateDpAsState(
+        targetValue = if (selected) 8.dp else 3.dp,
+        label = "selectionCardElevation"
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
 
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.medium,
 
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (selected) 8.dp else 3.dp
+            defaultElevation = elevation.value
         ),
 
         border = BorderStroke(
             width = if (selected) 2.dp else 1.dp,
-            color = if (selected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.outlineVariant
-            }
+            color = borderColor.value
         ),
 
         colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
+            containerColor = containerColor.value
         )
     ) {
         Column(
