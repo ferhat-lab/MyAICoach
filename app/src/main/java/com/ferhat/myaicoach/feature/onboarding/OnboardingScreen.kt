@@ -38,6 +38,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun OnboardingScreen(
@@ -127,54 +128,80 @@ fun OnboardingScreen(
             label = "onboardingStepTransition"
         ) { currentStep ->
 
-            when (currentStep) {
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
 
-                OnboardingStep.NICKNAME -> {
-                    NicknameStep(
-                        nickname = state.userProfile.nickname,
-                        onNicknameChange = viewModel::onNicknameChange
+                if (
+                    currentStep != OnboardingStep.NICKNAME &&
+                    currentStep != OnboardingStep.AI_INTRO
+                ) {
+                    Text(
+                        text = onboardingStepTitle(currentStep),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
                     )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = onboardingStepDescription(currentStep),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                OnboardingStep.AGE -> {
-                    AgeStep(
-                        selectedAgeRange = state.userProfile.ageRange,
-                        onAgeRangeSelected = viewModel::onAgeRangeSelected
-                    )
-                }
+                when (currentStep) {
 
-                OnboardingStep.ENGLISH_LEVEL -> {
-                    EnglishLevelStep(
-                        selectedLevel = state.userProfile.englishLevel,
-                        onLevelSelected = viewModel::onEnglishLevelSelected
-                    )
-                }
+                    OnboardingStep.NICKNAME -> {
+                        NicknameStep(
+                            nickname = state.userProfile.nickname,
+                            onNicknameChange = viewModel::onNicknameChange
+                        )
+                    }
+
+                    OnboardingStep.AGE -> {
+                        AgeStep(
+                            selectedAgeRange = state.userProfile.ageRange,
+                            onAgeRangeSelected = viewModel::onAgeRangeSelected
+                        )
+                    }
+
+                    OnboardingStep.ENGLISH_LEVEL -> {
+                        EnglishLevelStep(
+                            selectedLevel = state.userProfile.englishLevel,
+                            onLevelSelected = viewModel::onEnglishLevelSelected
+                        )
+                    }
 
                     OnboardingStep.INTERESTS -> {
-                    InterestStep(
-                        selectedInterests = state.userProfile.interests,
-                        onInterestClick = viewModel::toggleInterest
-                    )
-                }
+                        InterestStep(
+                            selectedInterests = state.userProfile.interests,
+                            onInterestClick = viewModel::toggleInterest
+                        )
+                    }
 
-                OnboardingStep.LEARNING_GOAL -> {
-                    LearningGoalStep(
-                        selectedGoal = state.userProfile.learningGoal,
-                        onGoalSelected = viewModel::onLearningGoalSelected
-                    )
-                }
+                    OnboardingStep.LEARNING_GOAL -> {
+                        LearningGoalStep(
+                            selectedGoal = state.userProfile.learningGoal,
+                            onGoalSelected = viewModel::onLearningGoalSelected
+                        )
+                    }
 
-                OnboardingStep.DAILY_GOAL -> {
-                    DailyGoalStep(
-                        selectedMinutes = state.userProfile.dailyGoalMinutes,
-                        onGoalSelected = viewModel::onDailyGoalSelected
-                    )
-                }
+                    OnboardingStep.DAILY_GOAL -> {
+                        DailyGoalStep(
+                            selectedMinutes = state.userProfile.dailyGoalMinutes,
+                            onGoalSelected = viewModel::onDailyGoalSelected
+                        )
+                    }
 
-                OnboardingStep.AI_INTRO -> {
-                    AiIntroStep(
-                        userProfile = state.userProfile
-                    )
+                    OnboardingStep.AI_INTRO -> {
+                        AiIntroStep(
+                            userProfile = state.userProfile
+                        )
+                    }
                 }
             }
         }
@@ -225,5 +252,59 @@ fun OnboardingScreen(
                 )
             }
         }
+    }
+}
+
+private fun onboardingStepTitle(
+    step: OnboardingStep
+): String {
+    return when (step) {
+        OnboardingStep.NICKNAME ->
+            "Sana nasıl hitap edelim?"
+
+        OnboardingStep.AGE ->
+            "Yaş aralığını seç"
+
+        OnboardingStep.ENGLISH_LEVEL ->
+            "İngilizce seviyen nedir?"
+
+        OnboardingStep.INTERESTS ->
+            "Neler ilgini çekiyor?"
+
+        OnboardingStep.LEARNING_GOAL ->
+            "İngilizce öğrenme hedefin ne?"
+
+        OnboardingStep.DAILY_GOAL ->
+            "Her gün ne kadar çalışalım?"
+
+        OnboardingStep.AI_INTRO ->
+            "Koçun hazır"
+    }
+}
+
+private fun onboardingStepDescription(
+    step: OnboardingStep
+): String {
+    return when (step) {
+        OnboardingStep.NICKNAME ->
+            "Derslerde ve konuşma pratiğinde kullanacağımız bir isim seç."
+
+        OnboardingStep.AGE ->
+            "Yaşına uygun örnekler ve ders içerikleri hazırlayacağız."
+
+        OnboardingStep.ENGLISH_LEVEL ->
+            "Sana en uygun seviyeyi seç. Daha sonra ayarlardan değiştirebilirsin."
+
+        OnboardingStep.INTERESTS ->
+            "Derslerini kişiselleştirmek için en az 3, en fazla 5 ilgi alanı seç."
+
+        OnboardingStep.LEARNING_GOAL ->
+            "Sana uygun dersleri hazırlayabilmemiz için ana hedefini seç."
+
+        OnboardingStep.DAILY_GOAL ->
+            "Sürdürebileceğin günlük çalışma süresini belirle."
+
+        OnboardingStep.AI_INTRO ->
+            "Sana özel öğrenme planını hazırlamaya hazırım."
     }
 }
