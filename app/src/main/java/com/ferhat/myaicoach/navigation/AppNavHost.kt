@@ -87,15 +87,8 @@ fun AppNavHost() {
 
         composable(
             route = AppRoute.Lesson.route
-        ) { backStackEntry ->
-
-            val stageName = backStackEntry.arguments
-                ?.getString("stage")
-                ?: return@composable
-
-            LessonScreen(
-                stageName = stageName
-            )
+        ) {
+            LessonScreen()
         }
     }
 }
