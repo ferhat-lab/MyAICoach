@@ -1,333 +1,256 @@
 package com.ferhat.myaicoach.feature.lesson
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ferhat.myaicoach.domain.lesson.MultipleChoiceActivity
-import com.ferhat.myaicoach.domain.lesson.WordIntroduction
 import com.ferhat.myaicoach.domain.lesson.AudioChoiceActivity
+import com.ferhat.myaicoach.domain.lesson.FillInTheBlankActivity
+import com.ferhat.myaicoach.domain.lesson.MatchingActivity
+import com.ferhat.myaicoach.domain.lesson.MultipleChoiceActivity
+import com.ferhat.myaicoach.domain.lesson.ReverseChoiceActivity
+import com.ferhat.myaicoach.domain.lesson.SentenceBuilderActivity
+import com.ferhat.myaicoach.domain.lesson.WordIntroduction
+import com.ferhat.myaicoach.feature.lesson.components.AudioChoiceCard
+import com.ferhat.myaicoach.feature.lesson.components.FillInTheBlankCard
+import com.ferhat.myaicoach.feature.lesson.components.LessonBottomBar
+import com.ferhat.myaicoach.feature.lesson.components.LessonCompletionCard
+import com.ferhat.myaicoach.feature.lesson.components.LessonTopBar
+import com.ferhat.myaicoach.feature.lesson.components.MatchingCard
+import com.ferhat.myaicoach.feature.lesson.components.MultipleChoiceCard
+import com.ferhat.myaicoach.feature.lesson.components.ReverseChoiceCard
+import com.ferhat.myaicoach.feature.lesson.components.SentenceBuilderCard
+import com.ferhat.myaicoach.feature.lesson.components.WordIntroductionCard
 
 @Composable
 fun LessonScreen(
-    viewModel: LessonViewModel = viewModel()
+    viewModel: LessonViewModel = viewModel(),
+    onNavigateBack: () -> Unit = {},
+    onPlayAudio: (String) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var showExitDialog by remember { mutableStateOf(false) }
+    var isLessonCompleted by remember { mutableStateOf(false) }
 
     val lesson = state.lesson ?: return
+    val totalActivities = state.activities.size
+    val currentIndex = state.currentActivityIndex
+    val activity = state.activities.getOrNull(currentIndex)
 
-    val activity = state.activities
-        .getOrNull(state.currentActivityIndex)
-        ?: return
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(
-                horizontal = 24.dp,
-                vertical = 32.dp
-            ),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        Text(
-            text = lesson.title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        when (activity) {
-
-            is WordIntroduction -> {
-                val word = lesson.vocabulary
-                    .firstOrNull {
-                        it.id == activity.wordId
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = {
+                Text(
+                    text = "Dersden çıkmak istiyor musun?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Şu ana kadarki ilerlemen kaybolabilir.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExitDialog = false
+                        onNavigateBack()
                     }
-                    ?: return
-
-                WordIntroductionContent(
-                    word = word.word,
-                    translation = word.translation,
-                    pronunciation = word.pronunciation,
-                    exampleSentence = word.exampleSentence,
-                    exampleTranslation = word.exampleTranslation,
-                    onNextClick = viewModel::nextActivity
-                )
-            }
-
-            is MultipleChoiceActivity -> {
-                MultipleChoiceContent(
-                    activity = activity,
-                    selectedAnswer = state.selectedAnswer,
-                    answerState = state.answerState,
-                    onAnswerClick = viewModel::selectAnswer,
-                    onNextClick = viewModel::nextActivity
-                )
-            }
-
-            is AudioChoiceActivity -> {
-                AudioChoiceContent(
-                    activity = activity,
-                    selectedAnswer = state.selectedAnswer,
-                    answerState = state.answerState,
-                    onAnswerClick = viewModel::selectAnswer,
-                    onNextClick = viewModel::nextActivity
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun WordIntroductionContent(
-    word: String,
-    translation: String,
-    pronunciation: String?,
-    exampleSentence: String,
-    exampleTranslation: String,
-    onNextClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-
-        Text(
-            text = word,
-            style = MaterialTheme.typography.displayLarge,
-            fontWeight = FontWeight.Bold
-        )
-
-        pronunciation?.let {
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = it,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = translation,
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            text = exampleSentence,
-            style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = exampleTranslation,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(40.dp))
-
-        Button(
-            onClick = onNextClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Devam Et")
-        }
-    }
-}
-
-@Composable
-private fun MultipleChoiceContent(
-    activity: MultipleChoiceActivity,
-    selectedAnswer: String?,
-    answerState: AnswerState,
-    onAnswerClick: (String) -> Unit,
-    onNextClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        Text(
-            text = activity.instruction,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = activity.prompt,
-            style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        activity.options.forEach { option ->
-
-            Button(
-                onClick = {
-                    onAnswerClick(option)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-            ) {
-                Text(option)
-            }
-        }
-
-        if (selectedAnswer != null) {
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = when (answerState) {
-                    AnswerState.CORRECT -> "Doğru ✓"
-                    AnswerState.INCORRECT -> "Tekrar dene"
-                    AnswerState.IDLE -> ""
-                },
-                color = when (answerState) {
-                    AnswerState.CORRECT ->
-                        MaterialTheme.colorScheme.secondary
-
-                    AnswerState.INCORRECT ->
-                        MaterialTheme.colorScheme.error
-
-                    AnswerState.IDLE ->
-                        MaterialTheme.colorScheme.onSurface
-                }
-            )
-
-            if (answerState == AnswerState.CORRECT) {
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = onNextClick,
-                    modifier = Modifier.fillMaxWidth()
                 ) {
+                    Text(
+                        text = "Çık",
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
                     Text("Devam Et")
                 }
             }
-        }
+        )
     }
-}
-@Composable
-private fun AudioChoiceContent(
-    activity: AudioChoiceActivity,
-    selectedAnswer: String?,
-    answerState: AnswerState,
-    onAnswerClick: (String) -> Unit,
-    onNextClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
 
-        Spacer(modifier = Modifier.height(48.dp))
-
-        Text(
-            text = "🎧",
-            style = MaterialTheme.typography.displayLarge
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Dinlediğin kelime hangisi?",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = {
-                // Daha sonra gerçek TTS bağlanacak.
+    Scaffold(
+        topBar = {
+            if (!isLessonCompleted) {
+                LessonTopBar(
+                    currentIndex = currentIndex,
+                    totalCount = totalActivities,
+                    onCloseClick = { showExitDialog = true }
+                )
             }
-        ) {
-            Text("🔊 Tekrar Dinle")
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        activity.options.forEach { option ->
-
-            Button(
-                onClick = {
-                    onAnswerClick(option)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 6.dp)
-            ) {
-                Text(option)
-            }
-        }
-
-        if (selectedAnswer != null) {
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = when (answerState) {
-                    AnswerState.CORRECT -> "Doğru ✓"
-                    AnswerState.INCORRECT -> "Tekrar dene"
-                    AnswerState.IDLE -> ""
-                },
-                color = when (answerState) {
-                    AnswerState.CORRECT ->
-                        MaterialTheme.colorScheme.secondary
-
-                    AnswerState.INCORRECT ->
-                        MaterialTheme.colorScheme.error
-
-                    AnswerState.IDLE ->
-                        MaterialTheme.colorScheme.onSurface
+        },
+        bottomBar = {
+            if (!isLessonCompleted && activity != null) {
+                val isIntro = activity is WordIntroduction
+                val correctAnswer = when (activity) {
+                    is MultipleChoiceActivity -> activity.correctAnswer
+                    is ReverseChoiceActivity -> activity.correctAnswer
+                    is AudioChoiceActivity -> activity.correctAnswer
+                    is FillInTheBlankActivity -> activity.correctAnswer
+                    is SentenceBuilderActivity -> activity.correctSentence
+                    else -> null
                 }
-            )
 
-            if (answerState == AnswerState.CORRECT) {
+                LessonBottomBar(
+                    answerState = state.answerState,
+                    selectedAnswer = state.selectedAnswer,
+                    correctAnswer = correctAnswer,
+                    isIntroduction = isIntro,
+                    onCheckClick = {
+                        viewModel.checkAnswer()
+                    },
+                    onNextClick = {
+                        if (currentIndex < state.activities.lastIndex) {
+                            viewModel.nextActivity()
+                        } else {
+                            isLessonCompleted = true
+                        }
+                    }
+                )
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            if (isLessonCompleted) {
+                LessonCompletionCard(
+                    lessonTitle = lesson.title,
+                    onCompleteClick = onNavigateBack,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else if (activity != null) {
+                AnimatedContent(
+                    targetState = currentIndex,
+                    transitionSpec = {
+                        if (targetState > initialState) {
+                            (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                                slideOutHorizontally { width -> -width } + fadeOut()
+                            )
+                        } else {
+                            (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
+                                slideOutHorizontally { width -> width } + fadeOut()
+                            )
+                        }
+                    },
+                    label = "activityTransition"
+                ) { targetIndex ->
+                    val targetActivity = state.activities.getOrNull(targetIndex)
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp, vertical = 12.dp)
+                    ) {
+                        when (targetActivity) {
+                            is WordIntroduction -> {
+                                val word = lesson.vocabulary.firstOrNull {
+                                    it.id == targetActivity.wordId
+                                }
+                                if (word != null) {
+                                    WordIntroductionCard(
+                                        wordItem = word,
+                                        onPlayAudio = onPlayAudio,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
 
-                Button(
-                    onClick = onNextClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Devam Et")
+                            is MultipleChoiceActivity -> {
+                                MultipleChoiceCard(
+                                    activity = targetActivity,
+                                    selectedAnswer = state.selectedAnswer,
+                                    answerState = state.answerState,
+                                    onAnswerClick = viewModel::selectAnswer,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            is ReverseChoiceActivity -> {
+                                ReverseChoiceCard(
+                                    activity = targetActivity,
+                                    selectedAnswer = state.selectedAnswer,
+                                    answerState = state.answerState,
+                                    onAnswerClick = viewModel::selectAnswer,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            is AudioChoiceActivity -> {
+                                AudioChoiceCard(
+                                    activity = targetActivity,
+                                    selectedAnswer = state.selectedAnswer,
+                                    answerState = state.answerState,
+                                    onAnswerClick = viewModel::selectAnswer,
+                                    onPlayAudio = onPlayAudio,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            is FillInTheBlankActivity -> {
+                                FillInTheBlankCard(
+                                    activity = targetActivity,
+                                    selectedAnswer = state.selectedAnswer,
+                                    answerState = state.answerState,
+                                    onAnswerClick = viewModel::selectAnswer,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            is SentenceBuilderActivity -> {
+                                SentenceBuilderCard(
+                                    activity = targetActivity,
+                                    selectedAnswer = state.selectedAnswer,
+                                    answerState = state.answerState,
+                                    onAnswerChange = viewModel::selectAnswer,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            is MatchingActivity -> {
+                                MatchingCard(
+                                    activity = targetActivity,
+                                    selectedAnswer = state.selectedAnswer,
+                                    answerState = state.answerState,
+                                    onAnswerChange = viewModel::selectAnswer,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            else -> {}
+                        }
+                    }
                 }
             }
         }
