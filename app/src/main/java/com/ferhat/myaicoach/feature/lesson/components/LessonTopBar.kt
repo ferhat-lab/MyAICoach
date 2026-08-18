@@ -1,7 +1,12 @@
 package com.ferhat.myaicoach.feature.lesson.components
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,10 +28,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+/**
+ * LessonTopBar: Ders akışındaki üst bilgi çubuğu.
+ * İlerleme çubuğu (LinearProgressIndicator) ve canlı kalp rozeti barındırır.
+ */
 @Composable
 fun LessonTopBar(
     currentIndex: Int,
@@ -34,16 +44,30 @@ fun LessonTopBar(
     onCloseClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Tamamlanan adım oranının 0.0f ile 1.0f arasında hesaplanması
     val progressRatio = if (totalCount > 0) {
         ((currentIndex + 1).toFloat() / totalCount.toFloat()).coerceIn(0f, 1f)
     } else {
         0f
     }
 
+    // İlerleme çubuğunun adımlar değiştikçe yumuşakça akmasını sağlayan animasyon
     val animatedProgress by animateFloatAsState(
         targetValue = progressRatio,
         animationSpec = spring(stiffness = 300f),
         label = "lessonProgressAnimation"
+    )
+
+    // Kalp simgesi için hafif canlı atan kalp (pulse) animasyonu
+    val infiniteTransition = rememberInfiniteTransition(label = "heartPulse")
+    val heartScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "heartScale"
     )
 
     Row(
@@ -53,6 +77,7 @@ fun LessonTopBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Çıkış Kapatma Butonu
         IconButton(
             onClick = onCloseClick,
             modifier = Modifier.size(36.dp)
@@ -64,25 +89,25 @@ fun LessonTopBar(
             )
         }
 
-        // Single continuous progress bar
+        // Tek Parça Kesintisiz Akıcı İlerleme Çubuğu
         LinearProgressIndicator(
             progress = { animatedProgress },
             modifier = Modifier
                 .weight(1f)
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
+                .height(10.dp)
+                .clip(RoundedCornerShape(5.dp)),
             color = MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.surfaceVariant,
             strokeCap = StrokeCap.Round
         )
 
-        // Compact Heart Chip
+        // Canlı Kalp Rozeti (❤️ 5)
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -90,7 +115,9 @@ fun LessonTopBar(
                     imageVector = Icons.Default.Favorite,
                     contentDescription = "Can",
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(14.dp)
+                    modifier = Modifier
+                        .scale(heartScale)
+                        .size(16.dp)
                 )
                 Text(
                     text = "5",

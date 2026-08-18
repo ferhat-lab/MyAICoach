@@ -44,6 +44,10 @@ import androidx.compose.ui.unit.dp
 import com.ferhat.myaicoach.domain.lesson.AudioChoiceActivity
 import com.ferhat.myaicoach.feature.lesson.AnswerState
 
+/**
+ * AudioChoiceCard: Dinleme egzersizlerinde dairesel genişleyen pulse halkaları,
+ * büyük ses ikonu ve seçenek kartları sunan Compose bileşeni.
+ */
 @Composable
 fun AudioChoiceCard(
     activity: AudioChoiceActivity,
@@ -53,9 +57,11 @@ fun AudioChoiceCard(
     onPlayAudio: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    // Ses butonuna dokunulma durumunu takip eden etkileşim nesnesi
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
+    // Sürekli genişleyip küçülen canlı pulse (nabız) animasyonu
     val infiniteTransition = rememberInfiniteTransition(label = "pulseTransition")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1.0f,
@@ -67,6 +73,18 @@ fun AudioChoiceCard(
         label = "pulseScale"
     )
 
+    // Dışarıya yayılan şeffaf ses halkası animasyonu
+    val ringScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "ringScale"
+    )
+
+    // Tıklanma anındaki basılma hissiyatı (0.94f ölçekleme)
     val pressScale by animateFloatAsState(
         targetValue = if (isPressed) 0.94f else 1.0f,
         animationSpec = spring(stiffness = 500f),
@@ -79,15 +97,16 @@ fun AudioChoiceCard(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Clean Instruction Typography
+        // Üst Başlık: "DİNLEME EGZERSİZİ" Etiketi
         Text(
             text = "DİNLEME EGZERSİZİ",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.tertiary,
+            color = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
+        // Soru İfadesi
         Text(
             text = "Dinlediğin kelime hangisi?",
             style = MaterialTheme.typography.titleLarge,
@@ -96,40 +115,57 @@ fun AudioChoiceCard(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        // Big Audio Hero Button
+        // Dış Katmanda Şeffaf Dalga Halkası & İçte Ana Ses Butonu
         Box(
-            modifier = Modifier
-                .scale(pulseScale * pressScale)
-                .size(96.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            com.ferhat.myaicoach.ui.theme.PrimaryDark
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(120.dp)
+        ) {
+            // Dış Şeffaf Nabız Halkası
+            Box(
+                modifier = Modifier
+                    .scale(ringScale)
+                    .size(96.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+            )
+
+            // İç Dairesel Ana Ses Butonu (Purple Radial Gradient)
+            Box(
+                modifier = Modifier
+                    .scale(pulseScale * pressScale)
+                    .size(92.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                com.ferhat.myaicoach.ui.theme.PrimaryDark
+                            )
                         )
                     )
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null
+                    ) {
+                        // UI katmanından TTS ses tetikleyici callback yayını
+                        onPlayAudio(activity.audioText)
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = "Tekrar Dinle",
+                    tint = Color.White,
+                    modifier = Modifier.size(44.dp)
                 )
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null
-                ) {
-                    onPlayAudio(activity.audioText)
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                contentDescription = "Tekrar Dinle",
-                tint = Color.White,
-                modifier = Modifier.size(44.dp)
-            )
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // "Tekrar Dinle" Yardımcı Rozeti
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
@@ -148,7 +184,7 @@ fun AudioChoiceCard(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // Options List with LessonChoiceOption
+        // Seçenekler Listesi (LessonChoiceOption ile mikro animasyonlu şıklar)
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp)

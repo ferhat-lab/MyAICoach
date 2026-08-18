@@ -43,15 +43,21 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.ferhat.myaicoach.domain.lesson.VocabularyItem
 
+/**
+ * WordIntroductionCard: Yeni öğrenilecek kelimeyi hero başlık, ses butonu, IPA telaffuzu
+ * ve örnek cümle kartı ile canlı bir şekilde sunan Jetpack Compose bileşeni.
+ */
 @Composable
 fun WordIntroductionCard(
     wordItem: VocabularyItem,
     onPlayAudio: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    // Ses butonuna basılma durumunu takip eden etkileşim kaynağı (InteractionSource)
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
+    // Basılma anında mikro ölçekleme animasyonu (0.94f basılma küçülmesi)
     val buttonScale by animateFloatAsState(
         targetValue = if (isPressed) 0.94f else 1.0f,
         animationSpec = spring(stiffness = 500f),
@@ -66,7 +72,7 @@ fun WordIntroductionCard(
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Clean Instruction Typography (No heavy box)
+        // Üst Etiket: Canlı mor renkte parlak yıldız simgeli "YENİ KELİME" rozeti
         Text(
             text = "✦ YENİ KELİME",
             style = MaterialTheme.typography.labelSmall,
@@ -75,12 +81,13 @@ fun WordIntroductionCard(
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
-        // Hero Word & Audio Row
+        // Ana Kelime & Dairesel Gradient Ses Butonu Satırı
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
             modifier = Modifier.fillMaxWidth()
         ) {
+            // İngilizce Kelime Başlığı
             Text(
                 text = wordItem.word,
                 style = MaterialTheme.typography.displayMedium,
@@ -90,10 +97,11 @@ fun WordIntroductionCard(
 
             Spacer(modifier = Modifier.size(16.dp))
 
+            // Dairesel Canlı Mor-Turkuaz Gradient Ses Butonu
             Box(
                 modifier = Modifier
                     .scale(buttonScale)
-                    .size(48.dp)
+                    .size(52.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
@@ -107,6 +115,7 @@ fun WordIntroductionCard(
                         interactionSource = interactionSource,
                         indication = null
                     ) {
+                        // UI katmanından TTS ses tetikleyici callback yayını
                         onPlayAudio(wordItem.word)
                     },
                 contentAlignment = Alignment.Center
@@ -115,12 +124,12 @@ fun WordIntroductionCard(
                     imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                     contentDescription = "Kelimeyi Dinle",
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(26.dp)
                 )
             }
         }
 
-        // Pronunciation
+        // IPA Fonetik Telaffuz Gösterimi (Örn: /neɪm/)
         wordItem.pronunciation?.let { pron ->
             Spacer(modifier = Modifier.height(6.dp))
             Text(
@@ -133,7 +142,7 @@ fun WordIntroductionCard(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Translation Highlight
+        // Türkçe Karşılık Vurgusu (Turkuaz ikincil renk)
         Text(
             text = wordItem.translation,
             style = MaterialTheme.typography.headlineMedium,
@@ -143,7 +152,7 @@ fun WordIntroductionCard(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Example Sentence Card (Single clean un-nested box)
+        // Örnek Cümle Kartı (İçerisinde hedef kelime mor renk ile vurgulanır)
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -165,7 +174,7 @@ fun WordIntroductionCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Highlight target word in sentence
+                // Örnek cümle içerisinde hedef kelimeyi otomatik bulup mor renkle vurgulama
                 val annotatedSentence = buildAnnotatedString {
                     val sentence = wordItem.exampleSentence
                     val target = wordItem.word
@@ -196,6 +205,7 @@ fun WordIntroductionCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                // Cümlenin Türkçe Çevirisi
                 Text(
                     text = wordItem.exampleTranslation,
                     style = MaterialTheme.typography.bodyMedium,
