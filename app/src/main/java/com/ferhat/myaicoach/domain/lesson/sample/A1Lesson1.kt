@@ -44,6 +44,15 @@ val A1Lesson1 = Lesson(
 
     vocabulary = listOf(
         VocabularyItem(
+            id = "vocab_hello",
+            word = "hello",
+            translation = "merhaba",
+            pronunciation = "/həˈləʊ/",
+            exampleSentence = "Hello! My name is Alex.",
+            exampleTranslation = "Merhaba! Benim adım Alex.",
+            role = VocabularyRole.NEW
+        ),
+        VocabularyItem(
             id = "vocab_name",
             word = "name",
             translation = "isim",
@@ -68,6 +77,15 @@ val A1Lesson1 = Lesson(
             pronunciation = "/lɪv/",
             exampleSentence = "I live in Istanbul.",
             exampleTranslation = "İstanbul'da yaşıyorum.",
+            role = VocabularyRole.NEW
+        ),
+        VocabularyItem(
+            id = "vocab_city",
+            word = "city",
+            translation = "şehir",
+            pronunciation = "/ˈsɪti/",
+            exampleSentence = "Istanbul is a big city.",
+            exampleTranslation = "İstanbul büyük bir şehirdir.",
             role = VocabularyRole.NEW
         )
     ),

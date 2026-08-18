@@ -1,11 +1,13 @@
 package com.ferhat.myaicoach.feature.lesson.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -40,17 +42,21 @@ fun LessonTopBar(
 
     val animatedProgress by animateFloatAsState(
         targetValue = progressRatio,
+        animationSpec = spring(stiffness = 300f),
         label = "lessonProgressAnimation"
     )
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        IconButton(onClick = onCloseClick) {
+        IconButton(
+            onClick = onCloseClick,
+            modifier = Modifier.size(36.dp)
+        ) {
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "Dersden Çık",
@@ -58,24 +64,25 @@ fun LessonTopBar(
             )
         }
 
+        // Single continuous progress bar
         LinearProgressIndicator(
             progress = { animatedProgress },
             modifier = Modifier
                 .weight(1f)
-                .height(12.dp)
-                .clip(RoundedCornerShape(6.dp)),
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp)),
             color = MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.surfaceVariant,
             strokeCap = StrokeCap.Round
         )
 
+        // Compact Heart Chip
         Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier.padding(start = 4.dp)
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -83,11 +90,11 @@ fun LessonTopBar(
                     imageVector = Icons.Default.Favorite,
                     contentDescription = "Can",
                     tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.height(16.dp)
+                    modifier = Modifier.size(14.dp)
                 )
                 Text(
                     text = "5",
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )

@@ -186,7 +186,19 @@ class LessonViewModel : ViewModel() {
 
     fun selectAnswer(answer: String?) {
         _uiState.update {
-            it.copy(selectedAnswer = answer)
+            it.copy(
+                selectedAnswer = answer,
+                // Re-selecting an answer resets INCORRECT back to IDLE so CHECK activates again
+                answerState = if (it.answerState == AnswerState.INCORRECT) AnswerState.IDLE else it.answerState
+            )
+        }
+    }
+
+    fun retryActivity() {
+        _uiState.update {
+            it.copy(
+                answerState = AnswerState.IDLE
+            )
         }
     }
 
@@ -205,10 +217,17 @@ class LessonViewModel : ViewModel() {
             else -> true
         }
 
-        val result = if (isCorrect) AnswerState.CORRECT else AnswerState.INCORRECT
-
-        _uiState.update {
-            it.copy(answerState = result)
+        if (isCorrect) {
+            _uiState.update {
+                it.copy(answerState = AnswerState.CORRECT)
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    answerState = AnswerState.INCORRECT,
+                    attemptCount = it.attemptCount + 1
+                )
+            }
         }
     }
 
@@ -220,7 +239,8 @@ class LessonViewModel : ViewModel() {
                 it.copy(
                     currentActivityIndex = it.currentActivityIndex + 1,
                     selectedAnswer = null,
-                    answerState = AnswerState.IDLE
+                    answerState = AnswerState.IDLE,
+                    attemptCount = 0
                 )
             }
         }

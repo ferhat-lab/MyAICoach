@@ -1,15 +1,19 @@
 package com.ferhat.myaicoach.feature.lesson.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,7 +24,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -88,20 +92,14 @@ fun MatchingCard(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Tag Header
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f),
+        // Clean Instruction Typography
+        Text(
+            text = activity.instruction,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
-        ) {
-            Text(
-                text = activity.instruction,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-            )
-        }
+        )
 
         Text(
             text = "Kelime Çiftlerini Eşleştir",
@@ -111,17 +109,17 @@ fun MatchingCard(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Two Columns: Left English, Right Turkish
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             // English Column
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = "İngilizce",
@@ -135,69 +133,22 @@ fun MatchingCard(
                     val isMatched = matchedPairs.containsKey(enWord)
                     val isSelected = selectedEnglish == enWord
 
-                    val containerColor by animateColorAsState(
-                        targetValue = when {
-                            isMatched -> Color(0xFF14532D)
-                            isSelected -> MaterialTheme.colorScheme.primaryContainer
-                            else -> MaterialTheme.colorScheme.surface
-                        },
-                        animationSpec = spring(),
-                        label = "enMatchBg"
-                    )
-
-                    val borderColor by animateColorAsState(
-                        targetValue = when {
-                            isMatched -> Color(0xFF22C55E)
-                            isSelected -> MaterialTheme.colorScheme.primary
-                            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                        },
-                        label = "enMatchBorder"
-                    )
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = !isMatched && answerState == AnswerState.IDLE) {
-                                selectedEnglish = if (isSelected) null else enWord
-                            },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = containerColor),
-                        border = BorderStroke(if (isSelected || isMatched) 2.dp else 1.dp, borderColor)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = enWord,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = if (isSelected || isMatched) FontWeight.Bold else FontWeight.Medium,
-                                color = when {
-                                    isMatched -> Color(0xFFDCFCE7)
-                                    isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
-                                    else -> MaterialTheme.colorScheme.onSurface
-                                }
-                            )
-
-                            if (isMatched) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = "Eşleşti",
-                                    tint = Color(0xFF4ADE80)
-                                )
-                            }
+                    MatchingOptionChip(
+                        text = enWord,
+                        isSelected = isSelected,
+                        isMatched = isMatched,
+                        enabled = !isMatched && answerState != AnswerState.CORRECT,
+                        onClick = {
+                            selectedEnglish = if (isSelected) null else enWord
                         }
-                    }
+                    )
                 }
             }
 
             // Turkish Column
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = "Türkçe",
@@ -211,63 +162,96 @@ fun MatchingCard(
                     val isMatched = matchedPairs.containsValue(trWord)
                     val isSelected = selectedTurkish == trWord
 
-                    val containerColor by animateColorAsState(
-                        targetValue = when {
-                            isMatched -> Color(0xFF14532D)
-                            isSelected -> MaterialTheme.colorScheme.secondaryContainer
-                            else -> MaterialTheme.colorScheme.surface
-                        },
-                        animationSpec = spring(),
-                        label = "trMatchBg"
-                    )
-
-                    val borderColor by animateColorAsState(
-                        targetValue = when {
-                            isMatched -> Color(0xFF22C55E)
-                            isSelected -> MaterialTheme.colorScheme.secondary
-                            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                        },
-                        label = "trMatchBorder"
-                    )
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = !isMatched && answerState == AnswerState.IDLE) {
-                                selectedTurkish = if (isSelected) null else trWord
-                            },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = containerColor),
-                        border = BorderStroke(if (isSelected || isMatched) 2.dp else 1.dp, borderColor)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = trWord,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = if (isSelected || isMatched) FontWeight.Bold else FontWeight.Medium,
-                                color = when {
-                                    isMatched -> Color(0xFFDCFCE7)
-                                    isSelected -> MaterialTheme.colorScheme.onSecondaryContainer
-                                    else -> MaterialTheme.colorScheme.onSurface
-                                }
-                            )
-
-                            if (isMatched) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = "Eşleşti",
-                                    tint = Color(0xFF4ADE80)
-                                )
-                            }
+                    MatchingOptionChip(
+                        text = trWord,
+                        isSelected = isSelected,
+                        isMatched = isMatched,
+                        enabled = !isMatched && answerState != AnswerState.CORRECT,
+                        onClick = {
+                            selectedTurkish = if (isSelected) null else trWord
                         }
-                    }
+                    )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MatchingOptionChip(
+    text: String,
+    isSelected: Boolean,
+    isMatched: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed && enabled) 0.97f else 1.0f,
+        animationSpec = spring(stiffness = 500f),
+        label = "matchingPressScale"
+    )
+
+    val containerColor by animateColorAsState(
+        targetValue = when {
+            isMatched -> Color(0xFF14532D)
+            isSelected -> MaterialTheme.colorScheme.primaryContainer
+            else -> MaterialTheme.colorScheme.surface
+        },
+        animationSpec = spring(),
+        label = "matchBg"
+    )
+
+    val borderColor by animateColorAsState(
+        targetValue = when {
+            isMatched -> Color(0xFF22C55E)
+            isSelected -> MaterialTheme.colorScheme.primary
+            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+        },
+        label = "matchBorder"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            ),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = BorderStroke(if (isSelected || isMatched) 2.dp else 1.dp, borderColor)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 52.dp)
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = if (isSelected || isMatched) FontWeight.Bold else FontWeight.Medium,
+                color = when {
+                    isMatched -> Color(0xFFDCFCE7)
+                    isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
+            )
+
+            if (isMatched) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Eşleşti",
+                    tint = Color(0xFF4ADE80)
+                )
             }
         }
     }

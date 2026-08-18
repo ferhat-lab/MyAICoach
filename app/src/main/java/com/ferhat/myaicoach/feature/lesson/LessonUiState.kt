@@ -18,6 +18,9 @@ data class LessonUiState(
     // Cevabın mevcut durumu
     val answerState: AnswerState = AnswerState.IDLE,
 
+    // Kaçıncı hatalı denemede olunduğunu takip eder (1. yanlış: Tekrar Dene, 2. yanlış: İpucu, 3. yanlış: Doğru Cevap Gösterimi)
+    val attemptCount: Int = 0,
+
     val isLoading: Boolean = false,
 
     val errorMessage: String? = null

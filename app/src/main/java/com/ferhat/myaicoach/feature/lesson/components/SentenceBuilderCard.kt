@@ -1,19 +1,24 @@
 package com.ferhat.myaicoach.feature.lesson.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +35,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -63,26 +69,20 @@ fun SentenceBuilderCard(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Tag Header
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+        // Clean Instruction Typography
+        Text(
+            text = activity.instruction,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 12.dp)
-        ) {
-            Text(
-                text = activity.instruction,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
-            )
-        }
+        )
 
         // Target Translation Prompt Card
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = 4.dp),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
@@ -92,7 +92,7 @@ fun SentenceBuilderCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 20.dp, horizontal = 16.dp),
+                    .padding(vertical = 18.dp, horizontal = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -107,17 +107,18 @@ fun SentenceBuilderCard(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Target Sentence Placement Area (Drop Slot)
+        // Target Sentence Placement Tray (Flex height with animateContentSize)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(120.dp),
+                .heightIn(min = 72.dp)
+                .animateContentSize(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = when (answerState) {
                     AnswerState.CORRECT -> Color(0xFF14532D)
                     AnswerState.INCORRECT -> Color(0xFF7F1D1D)
-                    AnswerState.IDLE -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    AnswerState.IDLE -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                 }
             ),
             border = BorderStroke(
@@ -149,22 +150,12 @@ fun SentenceBuilderCard(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         placedChips.forEachIndexed { index, chip ->
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                                modifier = Modifier.clickable(enabled = answerState == AnswerState.IDLE) {
-                                    placedChips.removeAt(index)
-                                }
-                            ) {
-                                Text(
-                                    text = chip,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                                )
-                            }
+                            SentenceChip(
+                                text = chip,
+                                isPlaced = true,
+                                enabled = answerState != AnswerState.CORRECT,
+                                onClick = { placedChips.removeAt(index) }
+                            )
                         }
                     }
                 }
@@ -173,24 +164,21 @@ fun SentenceBuilderCard(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Word Chips Bank (Available Chips)
+        // Word Chips Bank Header
         Text(
             text = "Kelime Bankası",
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier.padding(bottom = 10.dp)
         )
 
+        // Word Chips Bank Flow
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Count occurrence of each chip in activity.wordChips vs placedChips to handle duplicates properly
-            val chipCounts = remember(activity.wordChips) { mutableMapOf<String, Int>() }
-            activity.wordChips.forEach { chipCounts[it] = (chipCounts[it] ?: 0) + 1 }
-
             activity.wordChips.forEachIndexed { chipIndex, chip ->
                 val alreadyPlacedCount = placedChips.count { it == chip }
                 val occurrencesBeforeThis = activity.wordChips.take(chipIndex).count { it == chip }
@@ -201,36 +189,70 @@ fun SentenceBuilderCard(
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (isAvailable) {
-                            MaterialTheme.colorScheme.surface
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        },
-                        border = BorderStroke(
-                            1.dp,
-                            if (isAvailable) MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                            else Color.Transparent
-                        ),
-                        modifier = Modifier.clickable(enabled = isAvailable && answerState == AnswerState.IDLE) {
-                            placedChips.add(chip)
-                        }
-                    ) {
-                        Text(
-                            text = chip,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (isAvailable) {
-                                MaterialTheme.colorScheme.onSurface
-                            } else {
-                                Color.Transparent
-                            },
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-                        )
-                    }
+                    SentenceChip(
+                        text = chip,
+                        isPlaced = false,
+                        isAvailable = isAvailable,
+                        enabled = isAvailable && answerState != AnswerState.CORRECT,
+                        onClick = { placedChips.add(chip) }
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SentenceChip(
+    text: String,
+    isPlaced: Boolean,
+    isAvailable: Boolean = true,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed && enabled) 0.95f else 1.0f,
+        animationSpec = spring(stiffness = 500f),
+        label = "chipPressScale"
+    )
+
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = when {
+            isPlaced -> MaterialTheme.colorScheme.primaryContainer
+            isAvailable -> MaterialTheme.colorScheme.surface
+            else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+        },
+        border = BorderStroke(
+            1.dp,
+            when {
+                isPlaced -> MaterialTheme.colorScheme.primary
+                isAvailable -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                else -> Color.Transparent
+            }
+        ),
+        modifier = Modifier
+            .scale(scale)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            )
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = when {
+                isPlaced -> MaterialTheme.colorScheme.onPrimaryContainer
+                isAvailable -> MaterialTheme.colorScheme.onSurface
+                else -> Color.Transparent
+            },
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+        )
     }
 }

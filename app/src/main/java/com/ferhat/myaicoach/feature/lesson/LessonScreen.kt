@@ -32,6 +32,8 @@ import com.ferhat.myaicoach.domain.lesson.MatchingActivity
 import com.ferhat.myaicoach.domain.lesson.MultipleChoiceActivity
 import com.ferhat.myaicoach.domain.lesson.ReverseChoiceActivity
 import com.ferhat.myaicoach.domain.lesson.SentenceBuilderActivity
+import com.ferhat.myaicoach.domain.lesson.VocabularyItem
+import com.ferhat.myaicoach.domain.lesson.VocabularyRole
 import com.ferhat.myaicoach.domain.lesson.WordIntroduction
 import com.ferhat.myaicoach.feature.lesson.components.AudioChoiceCard
 import com.ferhat.myaicoach.feature.lesson.components.FillInTheBlankCard
@@ -43,6 +45,7 @@ import com.ferhat.myaicoach.feature.lesson.components.MultipleChoiceCard
 import com.ferhat.myaicoach.feature.lesson.components.ReverseChoiceCard
 import com.ferhat.myaicoach.feature.lesson.components.SentenceBuilderCard
 import com.ferhat.myaicoach.feature.lesson.components.WordIntroductionCard
+import com.ferhat.myaicoach.ui.animation.ConfettiEffect
 
 @Composable
 fun LessonScreen(
@@ -123,6 +126,7 @@ fun LessonScreen(
                     answerState = state.answerState,
                     selectedAnswer = state.selectedAnswer,
                     correctAnswer = correctAnswer,
+                    attemptCount = state.attemptCount,
                     isIntroduction = isIntro,
                     onCheckClick = {
                         viewModel.checkAnswer()
@@ -133,6 +137,9 @@ fun LessonScreen(
                         } else {
                             isLessonCompleted = true
                         }
+                    },
+                    onRetryClick = {
+                        viewModel.retryActivity()
                     }
                 )
             }
@@ -177,14 +184,20 @@ fun LessonScreen(
                             is WordIntroduction -> {
                                 val word = lesson.vocabulary.firstOrNull {
                                     it.id == targetActivity.wordId
-                                }
-                                if (word != null) {
-                                    WordIntroductionCard(
-                                        wordItem = word,
-                                        onPlayAudio = onPlayAudio,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
+                                } ?: VocabularyItem(
+                                    id = targetActivity.wordId,
+                                    word = targetActivity.wordId.removePrefix("vocab_"),
+                                    translation = targetActivity.wordId.removePrefix("vocab_"),
+                                    exampleSentence = targetActivity.wordId.removePrefix("vocab_"),
+                                    exampleTranslation = targetActivity.wordId.removePrefix("vocab_"),
+                                    role = VocabularyRole.NEW
+                                )
+
+                                WordIntroductionCard(
+                                    wordItem = word,
+                                    onPlayAudio = onPlayAudio,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
 
                             is MultipleChoiceActivity -> {
@@ -251,6 +264,13 @@ fun LessonScreen(
                             else -> {}
                         }
                     }
+                }
+
+                // Trigger confetti explosion whenever answerState becomes CORRECT
+                if (state.answerState == AnswerState.CORRECT) {
+                    ConfettiEffect(
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
         }
