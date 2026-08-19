@@ -14,6 +14,8 @@ from app.protocol.models import (
     TurnAction
 )
 from app.guards.turn_guard import ServerTurnGuard
+from app.services.qwen_llm_service import QwenLlmService
+from app.services.speech_segmenter import ServerSpeechSegmenter
 
 logger = logging.getLogger("MyAICoach-TurnOrchestrator")
 
@@ -25,7 +27,7 @@ class TurnContext:
     def __init__(self, conversation_id: str, turn_id: str, start_sequence_id: int = 1):
         self.conversation_id = conversation_id
         self.turn_id = turn_id
-        self.server_sequence_counter = 1  # Server tarafı bağımsız monoton sayaç
+        self.server_sequence_counter = 1
         self.active = True
         self.end_user_speech_received = False
         self.task: Optional[asyncio.Task] = None
@@ -36,12 +38,12 @@ class TurnContext:
 
 class TurnOrchestrator:
     """
-    TurnOrchestrator: Konuşma turlarını, sıralama (sequenceId), mock ses akışını
-    ve End-to-End iptal (Cancellation Propagation) mekanizmalarını yöneten orkestratör.
+    TurnOrchestrator: Konuşma turlarını, Qwen3 Token Streaming, Server-Side SpeechSegmenter,
+    ve End-to-End iptal (Cancellation Propagation) mekanizmalarını yöneten ana motor.
     """
-    def __init__(self, turn_guard: ServerTurnGuard):
+    def __init__(self, turn_guard: ServerTurnGuard, qwen_service: Optional[QwenLlmService] = None):
         self.turn_guard = turn_guard
-        # conversation_id -> TurnContext
+        self.qwen_service = qwen_service or QwenLlmService()
         self.active_contexts: Dict[str, TurnContext] = {}
 
     async def handle_start_turn(
@@ -51,7 +53,6 @@ class TurnOrchestrator:
         initial_sequence_id: int,
         send_message_fn: Callable[[dict], Awaitable[None]]
     ):
-        # 1. TurnGuard Doğrulaması
         can_start, error_code = self.turn_guard.can_start_turn(conversation_id, turn_id)
         if not can_start:
             err_msg = ErrorOccurredMessage(
@@ -66,15 +67,12 @@ class TurnOrchestrator:
             await send_message_fn(err_msg.model_dump())
             return
 
-        # Varsa eski tur bağlamını temizle (Cancel propagation)
         self.cancel_turn(conversation_id, turn_id, reason="SUPERSEDED_BY_NEW_TURN")
 
-        # 2. Yeni TurnContext Oluştur ve Kaydet
         ctx = TurnContext(conversation_id, turn_id, start_sequence_id=initial_sequence_id)
         self.active_contexts[conversation_id] = ctx
         self.turn_guard.register_turn(conversation_id, turn_id)
 
-        # 3. Server -> Client: TURN_STARTED (Server sequenceId = 2)
         started_msg = TurnStartedMessage(
             conversationId=conversation_id,
             turnId=turn_id,
@@ -95,68 +93,79 @@ class TurnOrchestrator:
             return
 
         ctx.end_user_speech_received = True
-        logger.info(f"🎤 END_USER_SPEECH Alındı -> Async Mock Flow Başlatılıyor ({conversation_id} -> {turn_id})")
+        logger.info(f"🎤 END_USER_SPEECH Alındı -> Qwen3 Streaming Pipeline Başlatılıyor ({conversation_id} -> {turn_id})")
 
-        # 4. END_USER_SPEECH Sonrası Async Mock Voice Pipeline Akışını Çalıştır
-        async def mock_turn_flow():
+        async def qwen_streaming_pipeline():
             try:
-                # A) TRANSCRIPT_RECEIVED (STT Finalize: 500ms)
-                await asyncio.sleep(0.5)
+                # 1. STT Final Transcript Simülasyonu
+                await asyncio.sleep(0.4)
                 if not ctx.active: return
 
+                user_transcript = "Hello Vani! Can I order a coffee, please?"
                 transcript_msg = TranscriptReceivedMessage(
                     conversationId=conversation_id,
                     turnId=turn_id,
                     sequenceId=ctx.next_server_sequence(),
-                    text="Hello Vani! I would like a cup of tea, please.",
+                    text=user_transcript,
                     isFinal=True
                 )
                 await send_message_fn(transcript_msg.model_dump())
                 logger.info(f"💬 TRANSCRIPT_RECEIVED Gönderildi (seq={transcript_msg.sequenceId})")
 
-                # B) LLM_TEXT_SEGMENT #1 (400ms -> SpeechSegmenter)
-                await asyncio.sleep(0.4)
+                # 2. Qwen3 Token Streaming & ServerSpeechSegmenter Boru Hattı
+                segmenter = ServerSpeechSegmenter()
+                segment_counter = 1
+
+                async for token in self.qwen_service.stream_tokens(user_prompt=user_transcript):
+                    if not ctx.active: break
+
+                    # Token'ları tampona ver ve tamamlanan cümle parçalarını al
+                    completed_sentences = segmenter.process_token(token)
+
+                    for sentence in completed_sentences:
+                        if not ctx.active: break
+
+                        seg_msg = LlmTextSegmentMessage(
+                            conversationId=conversation_id,
+                            turnId=turn_id,
+                            sequenceId=ctx.next_server_sequence(),
+                            segmentId=segment_counter,
+                            textSegment=sentence
+                        )
+                        await send_message_fn(seg_msg.model_dump())
+                        logger.info(f"⚡ LLM Segment #{segment_counter} Üretildi & Fırlatıldı: \"{sentence}\"")
+                        segment_counter += 1
+
+                # Tamponda kalan son parçayı da gönder
+                remaining_sentence = segmenter.flush()
+                if remaining_sentence and ctx.active:
+                    seg_msg = LlmTextSegmentMessage(
+                        conversationId=conversation_id,
+                        turnId=turn_id,
+                        sequenceId=ctx.next_server_sequence(),
+                        segmentId=segment_counter,
+                        textSegment=remaining_sentence
+                    )
+                    await send_message_fn(seg_msg.model_dump())
+                    logger.info(f"⚡ LLM Son Segment #{segment_counter} Üretildi & Fırlatıldı: \"{remaining_sentence}\"")
+
+                # 3. TurnMetadata (Pedagojik Bildirim)
                 if not ctx.active: return
-
-                seg1_msg = LlmTextSegmentMessage(
-                    conversationId=conversation_id,
-                    turnId=turn_id,
-                    sequenceId=ctx.next_server_sequence(),
-                    segmentId=1,
-                    textSegment="Sure! Here is a hot cup of tea for you."
-                )
-                await send_message_fn(seg1_msg.model_dump())
-
-                # C) LLM_TEXT_SEGMENT #2 (400ms)
-                await asyncio.sleep(0.4)
-                if not ctx.active: return
-
-                seg2_msg = LlmTextSegmentMessage(
-                    conversationId=conversation_id,
-                    turnId=turn_id,
-                    sequenceId=ctx.next_server_sequence(),
-                    segmentId=2,
-                    textSegment="Would you like some fresh bread too?"
-                )
-                await send_message_fn(seg2_msg.model_dump())
-
-                # D) TURN_METADATA (Pedagojik Bildirim)
-                await asyncio.sleep(0.3)
-                if not ctx.active: return
+                await asyncio.sleep(0.2)
 
                 meta_msg = TurnMetadataMessage(
                     conversationId=conversation_id,
                     turnId=turn_id,
                     sequenceId=ctx.next_server_sequence(),
-                    nextGoal="order_food",
+                    nextGoal="order_coffee",
                     turnAction=TurnAction.CONTINUE,
-                    usedTargetIds=["phrase_i_would_like", "vocab_tea"]
+                    usedTargetIds=["phrase_can_i_order", "vocab_coffee"]
                 )
                 await send_message_fn(meta_msg.model_dump())
 
-                # E) TURN_COMPLETED (Tur Başarıyla Bitti)
-                await asyncio.sleep(0.5)
+                # 4. TurnCompleted
                 if not ctx.active: return
+                await asyncio.sleep(0.3)
 
                 completed_msg = TurnCompletedMessage(
                     conversationId=conversation_id,
@@ -166,12 +175,12 @@ class TurnOrchestrator:
                 await send_message_fn(completed_msg.model_dump())
                 self.turn_guard.clear_turn(conversation_id, turn_id)
                 ctx.active = False
-                logger.info(f"✅ Mock Turn Başarıyla Tamamlandı ({conversation_id} -> {turn_id})")
+                logger.info(f"✅ Qwen3 Streaming Pipeline Başarıyla Tamamlandı ({conversation_id} -> {turn_id})")
 
             except asyncio.CancelledError:
-                logger.info(f"🛑 Mock Turn Flow Task Gerçekten İptal Edildi ({conversation_id} -> {turn_id})")
+                logger.info(f"🛑 Qwen3 Streaming Pipeline Task Gerçekten İptal Edildi ({conversation_id} -> {turn_id})")
 
-        ctx.task = asyncio.create_task(mock_turn_flow())
+        ctx.task = asyncio.create_task(qwen_streaming_pipeline())
 
     def cancel_turn(self, conversation_id: str, turn_id: str, reason: str = "USER_BARGE_IN") -> bool:
         ctx = self.active_contexts.get(conversation_id)
