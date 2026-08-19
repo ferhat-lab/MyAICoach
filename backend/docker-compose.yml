@@ -1,11 +1,34 @@
 version: '3.8'
 
 services:
-  myaicoach-voice-gateway:
+  myaicoach_voice_gateway:
     build: .
     container_name: myaicoach_voice_gateway
     ports:
       - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - QWEN_SERVICE_URL=http://qwen_llm_service:8001/v1/chat/completions
+      - VOXCPM_SERVICE_URL=http://voxcpm2_tts_service:8002/v1/tts/stream
+    depends_on:
+      - qwen_llm_service
+      - voxcpm2_tts_service
+    restart: unless-stopped
+
+  qwen_llm_service:
+    build: ./models/qwen
+    container_name: qwen_llm_service
+    ports:
+      - "8001:8001"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  voxcpm2_tts_service:
+    build: ./models/voxcpm2
+    container_name: voxcpm2_tts_service
+    ports:
+      - "8002:8002"
     environment:
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
