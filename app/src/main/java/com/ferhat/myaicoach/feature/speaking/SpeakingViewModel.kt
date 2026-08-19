@@ -16,8 +16,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * SpeakingViewModel: Canlı Vani konuşma tur motorunu (Turn State Machine) ve Mock Voice Pipeline'ı yöneten ViewModel.
- * User Barge-In (Araya girme) ve Iptal durumlarında güvenli durum geçişlerini icra eder.
+ * SpeakingViewModel: Canlı Vani konuşma tur motorunu (Turn State Machine), TurnGuard korumasını ve Mock Voice Pipeline'ı yöneten ViewModel.
+ * User Barge-In (Araya girme) ve İptal durumlarında güvenli durum geçişlerini icra eder.
  */
 class SpeakingViewModel(
     val turnController: TurnController = TurnController(),
@@ -44,17 +44,20 @@ class SpeakingViewModel(
     }
 
     /**
-     * Mikrofona basıldığında veya basılı tutulduğunda konuşma turunu başlatır.
-     * Varsa aktif çalan sesi anında keser (User Barge-In).
+     * Mikrofona basıldığında konuşma turunu başlatır. TurnGuard korumasına ve User Barge-In mantığına tabidir.
      */
     fun onMicPress() {
-        // 1. Varsa çalışan aktif tur coroutine işini ve sesi anında durdur (Barge-In)
+        val scenario = _uiState.value.scenario ?: A1Scenario1
+
+        // 1. Yeni Tur Başlatma İsteği (TurnGuard Debounce Check)
+        val newTurn = turnController.startNewTurn(scenario.id) ?: run {
+            println("🛡️ TurnGuard: Mikrofona basılma isteği debounce (300ms) engeline takıldı.")
+            return
+        }
+
+        // 2. Varsa çalışan eski coroutine işini ve çalınan sesi anında durdur (User Barge-In)
         activeTurnJob?.cancel()
         audioPlaybackController.stopAndFlush()
-
-        // 2. Yeni Tur Başlat (LISTENING)
-        val scenario = _uiState.value.scenario ?: A1Scenario1
-        val newTurn = turnController.startNewTurn(scenario.id)
 
         _uiState.update { it.copy(isMicPressed = true) }
 
@@ -86,7 +89,7 @@ class SpeakingViewModel(
     }
 
     /**
-     * Kullanıcı konuşmayı iptal ettiğinde veya mikrofondan elini çektiğinde çağrılır.
+     * Kullanıcı konuşmayı tamamladığında veya mikrofondan elini çektiğinde çağrılır.
      */
     fun onMicRelease() {
         _uiState.update { it.copy(isMicPressed = false) }

@@ -1,6 +1,5 @@
 package com.ferhat.myaicoach.feature.speaking.turn
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -9,19 +8,27 @@ import java.util.UUID
 
 /**
  * TurnController: Konuşma turlarını (Turn State Machine) yöneten denetleyici.
- * Temel Mühendislik Kuralı: CANCELLED, FAILED veya TIMED_OUT olan bir tur ASLA tekrar PLAYING veya COMPLETED olamaz.
+ * TurnGuard koruması ile debounce, per-user concurrency=1 ve terminal durum değişmezliğini garanti eder.
  */
-class TurnController {
+class TurnController(
+    val turnGuard: TurnGuard = TurnGuard()
+) {
 
     private val _currentTurn = MutableStateFlow<ConversationTurn?>(null)
     val currentTurn: StateFlow<ConversationTurn?> = _currentTurn.asStateFlow()
 
     /**
-     * Yeni bir konuşma turu başlatır. Varsa aktif turu iptal eder.
+     * Yeni bir konuşma turu başlatır. Debounce ve TurnGuard kontrollerini uygular.
+     * @return Yeni oluşturulan tur veya spam/debounce durumunda null.
      */
-    fun startNewTurn(conversationId: String): ConversationTurn {
-        // Varsa aktif turu iptal et (Barge-in / Cancel)
-        cancelActiveTurn("NEW_TURN_STARTED")
+    fun startNewTurn(conversationId: String): ConversationTurn? {
+        // 1. TurnGuard Debounce Kontrolü (300ms)
+        if (!turnGuard.canStartNewTurn()) {
+            return null
+        }
+
+        // 2. Varsa aktif turu iptal et (User Barge-in / Concurrency = 1 kuralı)
+        cancelActiveTurn("NEW_TURN_STARTED_BARGE_IN")
 
         val newTurn = ConversationTurn(
             conversationId = conversationId,
@@ -29,25 +36,26 @@ class TurnController {
             state = TurnState.LISTENING
         )
         _currentTurn.value = newTurn
+        println("🚀 Yeni Tur Başlatıldı (${newTurn.turnId}) - State: LISTENING")
         return newTurn
     }
 
     /**
-     * Tur durumunu günceller. İptal edilmiş veya sonlanmış turların durumunu değiştirmesini engeller.
+     * Tur durumunu günceller. TurnGuard ile terminal durumdaki turların değişmesini engeller.
      */
     fun transitionState(turnId: String, newState: TurnState): Boolean {
         val active = _currentTurn.value ?: return false
         if (active.turnId != turnId) return false
 
-        // Kural: Terminal durumdaki bir tur başka duruma geçemez (Race-condition koruması)
-        if (active.state.isTerminal) {
-            println("⚠️ Güvenlik Uyarı: Terminal durumdaki tur ($turnId, state: ${active.state}) '$newState' durumuna geçirilemez!")
+        // 1. TurnGuard Değişmezlik Doğrulaması
+        if (!turnGuard.validateStateTransition(active, newState)) {
             return false
         }
 
         _currentTurn.update { current ->
             current?.copy(state = newState)
         }
+        println("🔄 Tur Durumu Güncellendi (${active.turnId}): ${active.state} -> $newState")
         return true
     }
 
@@ -56,7 +64,11 @@ class TurnController {
      */
     fun cancelActiveTurn(reason: String = "USER_BARGE_IN"): Boolean {
         val active = _currentTurn.value ?: return false
-        if (active.state.isTerminal) return false
+
+        // 1. TurnGuard Barge-In Doğrulaması
+        if (!turnGuard.canBargeIn(active)) {
+            return false
+        }
 
         _currentTurn.update { current ->
             current?.copy(state = TurnState.CANCELLED)
