@@ -14,10 +14,10 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 /**
  * AudioPlaybackController: Low-latency VoxCPM2 PCM streaming audio playback motoru.
- * Android AudioTrack API kullanarak akan ses verilerini çalar ve User Barge-In anında sesi anında kesip tamponu temizler (flush).
+ * VoxCPM2 V2 resmi spec: 48,000 Hz (out_sample_rate: 48000), 16-bit PCM, Mono, AudioTrack.MODE_STREAM.
  */
 class AudioPlaybackController(
-    private val sampleRateHz: Int = 24000
+    private val sampleRateHz: Int = 48000
 ) {
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
@@ -57,6 +57,7 @@ class AudioPlaybackController(
                 .setTransferMode(AudioTrack.MODE_STREAM)
                 .build()
 
+            println("🔊 AudioTrack Başlatıldı: $sampleRateHz Hz PCM 16-bit Mono STREAM")
         } catch (e: Exception) {
             println("⚠️ AudioTrack başlatılırken uyarı (Emülatör/Test ortamı): ${e.localizedMessage}")
         }
@@ -77,7 +78,7 @@ class AudioPlaybackController(
      */
     fun startPlayback(turnId: String) {
         _isPlaying.value = true
-        println("🔊 Low-Latency AudioTrack Çalma Başlatıldı (Tur: $turnId)")
+        println("🔊 VoxCPM2 (48kHz) AudioTrack Çalma Başlatıldı (Tur: $turnId)")
     }
 
     private fun startPlaybackLoop() {
