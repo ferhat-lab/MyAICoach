@@ -12,12 +12,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentLinkedQueue
 
+import com.ferhat.myaicoach.data.remote.streaming.VoiceProtocol
+
 /**
  * AudioPlaybackController: Low-latency VoxCPM2 PCM streaming audio playback motoru.
  * VoxCPM2 V2 resmi spec: 48,000 Hz (out_sample_rate: 48000), 16-bit PCM, Mono, AudioTrack.MODE_STREAM.
  */
 class AudioPlaybackController(
-    private val sampleRateHz: Int = 48000
+    private val sampleRateHz: Int = VoiceProtocol.AUDIO_SAMPLE_RATE
 ) {
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
