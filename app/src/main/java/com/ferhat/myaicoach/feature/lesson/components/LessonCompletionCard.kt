@@ -24,6 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,12 +43,13 @@ import androidx.compose.ui.unit.dp
 
 /**
  * LessonCompletionCard: Ders başarıyla tamamlandığında altın kupa rozeti,
- * animasyonlu XP sayacı ve özet istatistik kartını görüntüleyen Compose bileşeni.
+ * animasyonlu XP sayacı ve Vani ile Konuşma Başlatma CTA butonunu görüntüleyen Compose bileşeni.
  */
 @Composable
 fun LessonCompletionCard(
     lessonTitle: String,
     onCompleteClick: () -> Unit,
+    onStartSpeakingClick: () -> Unit = onCompleteClick,
     modifier: Modifier = Modifier
 ) {
     // XP sayacının 0'dan 50 XP'ye canlı sayarak yükselmesini sağlayan animasyon
@@ -181,24 +183,41 @@ fun LessonCompletionCard(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Dersi Tamamla Butonu
+        // 🎙️ Vani ile Konuşmaya Başla (Primary CTA)
         Button(
-            onClick = onCompleteClick,
+            onClick = onStartSpeakingClick,
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
+                containerColor = Color(0xFF7C3AED), // Mor
                 contentColor = Color.White
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+                .height(54.dp)
         ) {
             Text(
-                text = "DERSİ TAMAMLA",
+                text = "🎙️ Vani ile Konuşmaya Başla",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Dersi Tamamla Butonu (Secondary Outlined)
+        OutlinedButton(
+            onClick = onCompleteClick,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+        ) {
+            Text(
+                text = "Ana Sayfaya Dön",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

@@ -7,6 +7,7 @@ import com.ferhat.myaicoach.data.repository.StudentStateRepositoryImpl
 import com.ferhat.myaicoach.domain.lesson.AudioChoiceActivity
 import com.ferhat.myaicoach.domain.lesson.FillInTheBlankActivity
 import com.ferhat.myaicoach.domain.lesson.Lesson
+import com.ferhat.myaicoach.domain.lesson.LessonActivity
 import com.ferhat.myaicoach.domain.lesson.LessonValidator
 import com.ferhat.myaicoach.domain.lesson.MatchingActivity
 import com.ferhat.myaicoach.domain.lesson.MultipleChoiceActivity
@@ -23,8 +24,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * LessonViewModel: Ders akışı ve cevap kontrolü mantığı.
- * LessonRepository ve StudentStateRepository katmanlarına bağlıdır.
+ * LessonViewModel: Pedagojik sıralı ders akışı ve cevap kontrolü mantığı.
+ * Kelimeleri sırayla tanıtır, pekiştirir ve en sonda eşleştirme egzersizi (MatchingCard) ile tamamlar.
  */
 class LessonViewModel(
     private val lessonRepository: LessonRepository = LessonRepositoryImpl(),
@@ -43,7 +44,7 @@ class LessonViewModel(
             _uiState.update { it.copy(isLoading = true) }
             lessonRepository.getLessonById(lessonId).collect { lesson ->
                 if (lesson != null) {
-                    val activities = generateActivitiesForLesson(lesson)
+                    val activities = generatePedagogicalActivities(lesson)
                     val validation = LessonValidator.validate(lesson, activities)
 
                     if (validation is ValidationResult.Error) {
@@ -142,11 +143,23 @@ class LessonViewModel(
         }
     }
 
-    private fun generateActivitiesForLesson(lesson: Lesson): List<com.ferhat.myaicoach.domain.lesson.LessonActivity> {
-        val activities = mutableListOf<com.ferhat.myaicoach.domain.lesson.LessonActivity>()
+    /**
+     * generatePedagogicalActivities: Pedagojik Ders Akışı Algoritması.
+     * 1. Kelime Tanıtımı (WordIntroduction)
+     * 2. Çoktan Seçmeli Test (MultipleChoice - EN -> TR)
+     * 3. Boşluk Doldurma (FillInTheBlank)
+     * 4. Ters Seçenek Testi (ReverseChoice - TR -> EN)
+     * 5. Cümle Kurma (SentenceBuilder)
+     * 6. Kapanışta Kelime Eşleştirme Egzersizi (MatchingActivity - 2 Sütunlu Soketli Bezier İp Çizgili)
+     */
+    private fun generatePedagogicalActivities(lesson: Lesson): List<LessonActivity> {
+        val activities = mutableListOf<LessonActivity>()
+        val allWords = lesson.vocabulary.map { it.word }
+        val allTranslations = lesson.vocabulary.map { it.translation }
 
-        // 1. Kelime Tanıtım Kartları
-        lesson.vocabulary.forEach { item ->
+        // 1. Her kelime için döngüsel pedagojik öğretim
+        lesson.vocabulary.forEachIndexed { index, item ->
+            // A) Kelime Tanıtım Kartı
             activities.add(
                 WordIntroduction(
                     id = "intro_${item.id}",
@@ -154,65 +167,78 @@ class LessonViewModel(
                     wordId = item.id
                 )
             )
-        }
 
-        // 2. Çoktan Seçmeli & Eşleştirme Aktiviteleri
-        lesson.exercises.forEach { exercise ->
-            val fallbackOptions = if (exercise.options.isNotEmpty()) {
-                exercise.options
-            } else {
-                (listOf(exercise.correctAnswer) + lesson.vocabulary.map { it.word }).distinct()
-            }
+            // B) Çoktan Seçmeli Test (EN -> TR)
+            val trDistractors = (allTranslations - item.translation).shuffled().take(2)
+            val mcOptions = (listOf(item.translation) + trDistractors).shuffled()
+            activities.add(
+                MultipleChoiceActivity(
+                    id = "mc_${item.id}",
+                    targetIds = listOf(item.id),
+                    instruction = "Doğru Türkçe karşılığını seç.",
+                    prompt = item.word,
+                    options = mcOptions,
+                    correctAnswer = item.translation
+                )
+            )
 
-            when (exercise.type) {
-                com.ferhat.myaicoach.domain.lesson.ExerciseType.MULTIPLE_CHOICE -> {
-                    activities.add(
-                        MultipleChoiceActivity(
-                            id = exercise.id,
-                            targetIds = exercise.targetIds,
-                            instruction = exercise.instruction,
-                            prompt = exercise.prompt,
-                            options = fallbackOptions,
-                            correctAnswer = exercise.correctAnswer
-                        )
+            // C) Ters Seçenek Testi (TR -> EN)
+            val enDistractors = (allWords - item.word).shuffled().take(2)
+            val rcOptions = (listOf(item.word) + enDistractors).shuffled()
+            activities.add(
+                ReverseChoiceActivity(
+                    id = "rc_${item.id}",
+                    targetIds = listOf(item.id),
+                    instruction = "İngilizce karşılığını seç.",
+                    prompt = item.translation,
+                    options = rcOptions,
+                    correctAnswer = item.word
+                )
+            )
+
+            // D) Boşluk Doldurma (Cümle İçi Pratik)
+            val exampleSentence = item.exampleSentence
+            if (exampleSentence.contains(item.word, ignoreCase = true)) {
+                val sentenceWithBlank = exampleSentence.replace(Regex(item.word, RegexOption.IGNORE_CASE), "___")
+                    .replace(".", "")
+                activities.add(
+                    FillInTheBlankActivity(
+                        id = "fill_${item.id}",
+                        targetIds = listOf(item.id),
+                        instruction = "Cümledeki boşluğu tamamla.",
+                        sentenceWithBlank = sentenceWithBlank,
+                        options = rcOptions,
+                        correctAnswer = item.word
                     )
-                }
-                com.ferhat.myaicoach.domain.lesson.ExerciseType.SENTENCE_BUILDER -> {
-                    activities.add(
-                        SentenceBuilderActivity(
-                            id = exercise.id,
-                            targetIds = exercise.targetIds,
-                            instruction = exercise.instruction,
-                            promptTranslation = exercise.prompt,
-                            wordChips = fallbackOptions,
-                            correctSentence = exercise.correctAnswer
-                        )
-                    )
-                }
-                com.ferhat.myaicoach.domain.lesson.ExerciseType.FILL_IN_THE_BLANK -> {
-                    activities.add(
-                        FillInTheBlankActivity(
-                            id = exercise.id,
-                            targetIds = exercise.targetIds,
-                            instruction = exercise.instruction,
-                            sentenceWithBlank = if (exercise.prompt.contains("___")) exercise.prompt else exercise.prompt.replace("____", "___"),
-                            options = fallbackOptions,
-                            correctAnswer = exercise.correctAnswer
-                        )
-                    )
-                }
-                com.ferhat.myaicoach.domain.lesson.ExerciseType.MATCHING -> {
-                    activities.add(
-                        MatchingActivity(
-                            id = exercise.id,
-                            targetIds = exercise.targetIds,
-                            instruction = exercise.instruction,
-                            pairs = fallbackOptions.associateWith { "çeviri" }
-                        )
-                    )
-                }
+                )
             }
         }
+
+        // 2. Cümle Oluşturma Egzersizleri (Lesson Exercises)
+        lesson.exercises.filter { it.type == com.ferhat.myaicoach.domain.lesson.ExerciseType.SENTENCE_BUILDER }
+            .forEach { exercise ->
+                activities.add(
+                    SentenceBuilderActivity(
+                        id = exercise.id,
+                        targetIds = exercise.targetIds,
+                        instruction = exercise.instruction,
+                        promptTranslation = exercise.prompt,
+                        wordChips = exercise.options,
+                        correctSentence = exercise.correctAnswer
+                    )
+                )
+            }
+
+        // 3. KAPANIŞ: Kelime Eşleştirme Egzersizi (MatchingActivity)
+        val matchingPairs = lesson.vocabulary.associate { it.word to it.translation }
+        activities.add(
+            MatchingActivity(
+                id = "matching_final_${lesson.id}",
+                targetIds = lesson.vocabulary.map { it.id },
+                instruction = "Öğrendiğin kelime çiftlerini eşleştir.",
+                pairs = matchingPairs
+            )
+        )
 
         return activities
     }

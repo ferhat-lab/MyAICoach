@@ -46,6 +46,7 @@ import com.ferhat.myaicoach.domain.lesson.MatchingActivity
 import com.ferhat.myaicoach.domain.lesson.MultipleChoiceActivity
 import com.ferhat.myaicoach.domain.lesson.ReverseChoiceActivity
 import com.ferhat.myaicoach.domain.lesson.SentenceBuilderActivity
+import com.ferhat.myaicoach.domain.lesson.SpeakingScenario
 import com.ferhat.myaicoach.domain.lesson.WordIntroduction
 import com.ferhat.myaicoach.feature.lesson.components.AudioChoiceCard
 import com.ferhat.myaicoach.feature.lesson.components.FillInTheBlankCard
@@ -59,10 +60,14 @@ import com.ferhat.myaicoach.feature.lesson.components.SentenceBuilderCard
 import com.ferhat.myaicoach.feature.lesson.components.WordIntroductionCard
 import com.ferhat.myaicoach.ui.animation.ConfettiEffect
 
+/**
+ * LessonScreen: Ders içi alıştırmalar ve ders sonu kutlama ekranı.
+ */
 @Composable
 fun LessonScreen(
     viewModel: LessonViewModel = viewModel(),
     onNavigateBack: () -> Unit = {},
+    onStartSpeakingScenario: (SpeakingScenario) -> Unit = {},
     onPlayAudio: (String) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -220,6 +225,9 @@ fun LessonScreen(
                 LessonCompletionCard(
                     lessonTitle = lesson.title,
                     onCompleteClick = onNavigateBack,
+                    onStartSpeakingClick = {
+                        lesson.speakingScenario?.let { onStartSpeakingScenario(it) }
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
             } else if (activity != null) {
@@ -232,7 +240,7 @@ fun LessonScreen(
                             )
                         } else {
                             (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
-                                slideOutHorizontally { width -> width } + fadeOut()
+                                slideOutHorizontally { width -> -width } + fadeOut()
                             )
                         }
                     },
