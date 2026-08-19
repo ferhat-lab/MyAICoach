@@ -13,10 +13,11 @@ import com.ferhat.myaicoach.feature.lesson.LessonScreen
 import com.ferhat.myaicoach.feature.onboarding.OnboardingScreen
 import com.ferhat.myaicoach.feature.onboarding.WelcomeScreen
 import com.ferhat.myaicoach.feature.profile.ProfileScreen
+import com.ferhat.myaicoach.feature.speaking.SpeakingScreen
 
 /**
  * AppNavHost: Uygulama navigasyon yönlendiricisi.
- * Ana Sayfa, Kategoriler, Dersler ve Profil ekranları arasında akışı yönetir.
+ * Ana Sayfa, Kategoriler, Dersler, Canlı Vani Konuşma ve Profil ekranları arasında akışı yönetir.
  */
 @Composable
 fun AppNavHost() {
@@ -88,12 +89,10 @@ fun AppNavHost() {
         composable(route = AppRoute.Home.route) {
             HomeScreen(
                 onLessonClick = { stage ->
-                    if (stage == LessonStage.PRACTICE) {
-                        navController.navigate(AppRoute.Categories.route)
-                    } else {
-                        navController.navigate(
-                            AppRoute.Lesson.createRoute(stage.name)
-                        )
+                    when (stage) {
+                        LessonStage.PRACTICE -> navController.navigate(AppRoute.Categories.route)
+                        LessonStage.SPEAK -> navController.navigate(AppRoute.Speaking.route)
+                        else -> navController.navigate(AppRoute.Lesson.createRoute(stage.name))
                     }
                 }
             )
@@ -120,6 +119,18 @@ fun AppNavHost() {
             route = AppRoute.Lesson.route
         ) {
             LessonScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onStartSpeakingScenario = { scenario ->
+                    navController.navigate(AppRoute.Speaking.route)
+                }
+            )
+        }
+
+        // 🎙️ FAZ 2: Vani Canlı AI Konuşma Ekranı (SpeakingScreen)
+        composable(route = AppRoute.Speaking.route) {
+            SpeakingScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

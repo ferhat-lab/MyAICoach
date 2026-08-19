@@ -16,6 +16,8 @@ sealed class AppRoute(val route: String) {
 
     data object Profile : AppRoute("profile")
 
+    data object Speaking : AppRoute("speaking")
+
     data object Lesson : AppRoute("lesson/{stage}") {
 
         fun createRoute(stage: String): String {
