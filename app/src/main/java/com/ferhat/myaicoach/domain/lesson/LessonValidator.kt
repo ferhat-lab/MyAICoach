@@ -98,8 +98,9 @@ object LessonValidator {
                 }
 
                 is SentenceBuilderActivity -> {
-                    val chipWordsNormalized = activity.wordChips.map { it.lowercase().trim() }
-                    val targetWords = activity.correctSentence.split(" ").map { it.lowercase().trim() }
+                    // Noktalama işaretlerini (. , ? !) temizleyerek normalize etme
+                    val chipWordsNormalized = activity.wordChips.map { cleanWord(it) }
+                    val targetWords = activity.correctSentence.split(" ").map { cleanWord(it) }
 
                     targetWords.forEach { targetWord ->
                         if (targetWord !in chipWordsNormalized) {
@@ -121,5 +122,9 @@ object LessonValidator {
         }
 
         return ValidationResult.Success
+    }
+
+    private fun cleanWord(word: String): String {
+        return word.lowercase().trim().replace(".", "").replace("?", "").replace("!", "").replace(",", "")
     }
 }

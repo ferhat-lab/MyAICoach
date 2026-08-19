@@ -165,7 +165,7 @@ val A1Lesson1 = Lesson(
                 "from",
                 "I'm"
             ),
-            correctAnswer = "I'm from Turkey.",
+            correctAnswer = "I'm from Turkey",
             explanation = "\"I'm from...\" kalıbı nereli olduğunu söylemek için kullanılır.",
             targetIds = listOf(
                 "phrase_im_from",
