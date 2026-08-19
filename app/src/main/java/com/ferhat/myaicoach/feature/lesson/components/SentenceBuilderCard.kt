@@ -43,6 +43,10 @@ import androidx.compose.ui.unit.dp
 import com.ferhat.myaicoach.domain.lesson.SentenceBuilderActivity
 import com.ferhat.myaicoach.feature.lesson.AnswerState
 
+/**
+ * SentenceBuilderCard: Cümle oluşturma aktivitesi bileşeni.
+ * Kullanıcı alt kelime bankasından çiplere dokunarak üst cümleyi kurar.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SentenceBuilderCard(
@@ -52,10 +56,10 @@ fun SentenceBuilderCard(
     onAnswerChange: (String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // List of placed chips in target slot
+    // Üst tray alanına yerleştirilen kelime çiplerinin listesi
     val placedChips = remember(activity.id) { mutableStateListOf<String>() }
 
-    // Synchronize placedChips with selectedAnswer string
+    // Çip değişikliğini ebeveyn ViewModel'in selectedAnswer stringine senkronize etme
     LaunchedEffect(placedChips.toList()) {
         val currentString = if (placedChips.isEmpty()) null else placedChips.joinToString(" ")
         if (currentString != selectedAnswer) {
@@ -69,7 +73,7 @@ fun SentenceBuilderCard(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Clean Instruction Typography
+        // Yönerge Başlığı
         Text(
             text = activity.instruction,
             style = MaterialTheme.typography.labelSmall,
@@ -78,7 +82,7 @@ fun SentenceBuilderCard(
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
-        // Target Translation Prompt Card
+        // Hedef Türkçe Cümle Kartı
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -107,7 +111,7 @@ fun SentenceBuilderCard(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Target Sentence Placement Tray (Flex height with animateContentSize)
+        // Cümle Oluşturma Yerleştirme Alanı (Dinamik Yükseklik Animasyonlu)
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -116,8 +120,8 @@ fun SentenceBuilderCard(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = when (answerState) {
-                    AnswerState.CORRECT -> Color(0xFF14532D)
-                    AnswerState.INCORRECT -> Color(0xFF7F1D1D)
+                    AnswerState.CORRECT -> Color(0xFF14532D) // Koyu Yeşil (Doğru)
+                    AnswerState.INCORRECT -> Color(0xFF7F1D1D) // Koyu Kırmızı (Yanlış)
                     AnswerState.IDLE -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                 }
             ),
@@ -164,7 +168,7 @@ fun SentenceBuilderCard(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Word Chips Bank Header
+        // Kelime Bankası Başlığı
         Text(
             text = "Kelime Bankası",
             style = MaterialTheme.typography.labelSmall,
@@ -173,7 +177,7 @@ fun SentenceBuilderCard(
             modifier = Modifier.padding(bottom = 10.dp)
         )
 
-        // Word Chips Bank Flow
+        // Kelime Bankası Çipleri
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -202,6 +206,9 @@ fun SentenceBuilderCard(
     }
 }
 
+/**
+ * SentenceChip: Cümle çipi bileşeni. Dokunma mikro ölçekleme animasyonu içerir.
+ */
 @Composable
 private fun SentenceChip(
     text: String,
