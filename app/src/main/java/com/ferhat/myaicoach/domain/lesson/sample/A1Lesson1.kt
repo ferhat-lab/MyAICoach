@@ -177,7 +177,12 @@ val A1Lesson1 = Lesson(
             id = "a1_u1_l1_ex3",
             type = ExerciseType.FILL_IN_THE_BLANK,
             instruction = "Eksik kelimeyi tamamla.",
-            prompt = "My ____ is Alex.",
+            prompt = "My ___ is Alex.",
+            options = listOf(
+                "name",
+                "from",
+                "live"
+            ),
             correctAnswer = "name",
             explanation = "\"My name is...\" adını söylerken kullanılır.",
             targetIds = listOf(

@@ -158,6 +158,12 @@ class LessonViewModel(
 
         // 2. Çoktan Seçmeli & Eşleştirme Aktiviteleri
         lesson.exercises.forEach { exercise ->
+            val fallbackOptions = if (exercise.options.isNotEmpty()) {
+                exercise.options
+            } else {
+                (listOf(exercise.correctAnswer) + lesson.vocabulary.map { it.word }).distinct()
+            }
+
             when (exercise.type) {
                 com.ferhat.myaicoach.domain.lesson.ExerciseType.MULTIPLE_CHOICE -> {
                     activities.add(
@@ -166,7 +172,7 @@ class LessonViewModel(
                             targetIds = exercise.targetIds,
                             instruction = exercise.instruction,
                             prompt = exercise.prompt,
-                            options = exercise.options,
+                            options = fallbackOptions,
                             correctAnswer = exercise.correctAnswer
                         )
                     )
@@ -178,7 +184,7 @@ class LessonViewModel(
                             targetIds = exercise.targetIds,
                             instruction = exercise.instruction,
                             promptTranslation = exercise.prompt,
-                            wordChips = exercise.options,
+                            wordChips = fallbackOptions,
                             correctSentence = exercise.correctAnswer
                         )
                     )
@@ -189,8 +195,8 @@ class LessonViewModel(
                             id = exercise.id,
                             targetIds = exercise.targetIds,
                             instruction = exercise.instruction,
-                            sentenceWithBlank = exercise.prompt,
-                            options = exercise.options,
+                            sentenceWithBlank = if (exercise.prompt.contains("___")) exercise.prompt else exercise.prompt.replace("____", "___"),
+                            options = fallbackOptions,
                             correctAnswer = exercise.correctAnswer
                         )
                     )
@@ -201,7 +207,7 @@ class LessonViewModel(
                             id = exercise.id,
                             targetIds = exercise.targetIds,
                             instruction = exercise.instruction,
-                            pairs = exercise.options.associateWith { "çeviri" }
+                            pairs = fallbackOptions.associateWith { "çeviri" }
                         )
                     )
                 }
