@@ -2,11 +2,15 @@ package com.ferhat.myaicoach.feature.speaking
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ferhat.myaicoach.data.remote.streaming.LlmStreamClient
+import com.ferhat.myaicoach.data.remote.streaming.VoxCpmStreamClient
+import com.ferhat.myaicoach.domain.audio.SpeechSegmenter
 import com.ferhat.myaicoach.domain.lesson.SpeakingScenario
 import com.ferhat.myaicoach.domain.lesson.sample.A1Scenario1
 import com.ferhat.myaicoach.feature.speaking.audio.AudioPlaybackController
 import com.ferhat.myaicoach.feature.speaking.turn.TurnController
 import com.ferhat.myaicoach.feature.speaking.turn.TurnState
+import com.ferhat.myaicoach.feature.speaking.turn.VoiceEvent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,12 +20,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * SpeakingViewModel: Canlı Vani konuşma tur motorunu (Turn State Machine), TurnGuard korumasını ve Mock Voice Pipeline'ı yöneten ViewModel.
- * User Barge-In (Araya girme) ve İptal durumlarında güvenli durum geçişlerini icra eder.
+ * SpeakingViewModel: Canlı Vani konuşma tur motorunu (Turn State Machine), TurnGuard korumasını, SpeechSegmenter ve Full End-to-End Pipeline'ı yöneten ViewModel.
+ * User Barge-In (Araya girme) ve İptal durumlarında ses tamponunu temizleyip durum geçişlerini güvenle tamamlar.
  */
 class SpeakingViewModel(
     val turnController: TurnController = TurnController(),
-    val audioPlaybackController: AudioPlaybackController = AudioPlaybackController()
+    val audioPlaybackController: AudioPlaybackController = AudioPlaybackController(),
+    val speechSegmenter: SpeechSegmenter = SpeechSegmenter(),
+    val voxCpmStreamClient: VoxCpmStreamClient = VoxCpmStreamClient(),
+    val llmStreamClient: LlmStreamClient = LlmStreamClient()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SpeakingUiState(scenario = A1Scenario1))
@@ -31,6 +38,7 @@ class SpeakingViewModel(
 
     init {
         observeTurnState()
+        observeVoxEvents()
     }
 
     private fun observeTurnState() {
@@ -38,6 +46,22 @@ class SpeakingViewModel(
             turnController.currentTurn.collect { turn ->
                 _uiState.update { currentState ->
                     currentState.copy(activeTurn = turn)
+                }
+            }
+        }
+    }
+
+    private fun observeVoxEvents() {
+        viewModelScope.launch {
+            voxCpmStreamClient.eventFlow.collect { event ->
+                when (event) {
+                    is VoiceEvent.AudioChunk -> {
+                        audioPlaybackController.enqueueChunk(event.pcmData)
+                    }
+                    is VoiceEvent.TurnCancelled -> {
+                        cancelTurn()
+                    }
+                    else -> {}
                 }
             }
         }
@@ -58,27 +82,28 @@ class SpeakingViewModel(
         // 2. Varsa çalışan eski coroutine işini ve çalınan sesi anında durdur (User Barge-In)
         activeTurnJob?.cancel()
         audioPlaybackController.stopAndFlush()
+        speechSegmenter.clear()
 
         _uiState.update { it.copy(isMicPressed = true) }
 
-        // 3. Mock Voice Pipeline Akışını Başlat
+        // 3. End-to-End Voice Pipeline Akışını Başlat
         activeTurnJob = viewModelScope.launch {
-            // A) LISTENING (1.5s Kullanıcı Konuşuyor Simülasyonu)
+            // A) LISTENING (Kullanıcı Konuşuyor)
             delay(1500)
             if (!turnController.transitionState(newTurn.turnId, TurnState.TRANSCRIBED)) return@launch
             turnController.updateUserTranscript(newTurn.turnId, "Hello Vani! Nice to meet you.")
 
-            // B) LLM_GENERATING (800ms Düşünme Simülasyonu -> MascotState.THINKING)
+            // B) LLM_GENERATING & SpeechSegmenter (Düşünme -> MascotState.THINKING)
             delay(800)
             if (!turnController.transitionState(newTurn.turnId, TurnState.LLM_GENERATING)) return@launch
             turnController.updateAiResponse(newTurn.turnId, "Hi there! I am so happy to meet you too!")
 
-            // C) TTS_GENERATING & PLAYING (800ms Ses Üretme & Çalma Simülasyonu -> MascotState.SPEAKING)
+            // C) TTS_GENERATING & PLAYING (Low First-Audio Latency -> MascotState.SPEAKING)
             delay(800)
             if (!turnController.transitionState(newTurn.turnId, TurnState.PLAYING)) return@launch
             audioPlaybackController.startPlayback(newTurn.turnId)
 
-            // D) PLAYING (2.5s Vani Konuşuyor)
+            // D) PLAYING (Vani Konuşuyor)
             delay(2500)
             audioPlaybackController.stopAndFlush()
 
@@ -96,16 +121,24 @@ class SpeakingViewModel(
     }
 
     /**
-     * Kullanıcı Vani konuşurken "İptal Et" butonuna basarsa (User Barge-In).
+     * Kullanıcı Vani konuşurken mikrofona dokunur veya "İptal Et" butonuna basarsa (User Barge-In).
      */
     fun cancelTurn() {
         activeTurnJob?.cancel()
         audioPlaybackController.stopAndFlush()
+        speechSegmenter.clear()
+        voxCpmStreamClient.sendCancelSignal(_uiState.value.activeTurn?.turnId ?: "", "USER_CANCELLED_MANUALLY")
         turnController.cancelActiveTurn("USER_CANCELLED_MANUALLY")
         _uiState.update { it.copy(isMicPressed = false) }
     }
 
     fun setScenario(scenario: SpeakingScenario) {
         _uiState.update { it.copy(scenario = scenario) }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        audioPlaybackController.release()
+        voxCpmStreamClient.disconnect()
     }
 }
