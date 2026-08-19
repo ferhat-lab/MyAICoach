@@ -3,8 +3,8 @@ package com.ferhat.myaicoach.feature.lesson.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.font.FontWeight
@@ -62,22 +63,17 @@ private data class UserPair(
     val colorIndex: Int
 )
 
-// Sırasıyla eşleştirme çiftlerine atanacak canlı renk paleti
+// Her aktif çift için 5 adet tamamen benzersiz renk paleti
 private val PairColors = listOf(
-    Color(0xFF8B5CF6), // Canlı Mor
-    Color(0xFF06B6D4), // Turkuaz Mavi
-    Color(0xFFF59E0B), // Kehribar Turuncu
-    Color(0xFFEC4899), // Pembe
-    Color(0xFF10B981)  // Zümrüt Yeşili
+    Color(0xFFA855F7), // 0: Canlı Mor
+    Color(0xFF0284C7), // 1: Canlı Mavi
+    Color(0xFFEA580C), // 2: Canlı Turuncu
+    Color(0xFFDB2777), // 3: Canlı Pembe
+    Color(0xFF16A34A)  // 4: Canlı Yeşil
 )
 
 /**
- * MatchingCard: Yeniden tasarlanmış interaktif kelime eşleştirme bileşeni.
- * - Soldan ve sağdan kelimelere dokunularak eşleştirme yapılır.
- * - Eşleşen her çift kendine özel canlı bir renk alır ve arkalarında kıvrımlı ip bağlantısı çizilir.
- * - Tıklanarak bağlantı kaldırılabilir veya değiştirilebilir.
- * - Tüm kelimeler eşleşince KONTROL ET butonu aktifleşir.
- * - Kontrol sonrasında doğru çiftler Yeşile (✓), yanlış çiftler Kırmızıya (✕) döner.
+ * MatchingCard: İptal ve yeniden seçim durumlarında renk çakışmasını engelleyen benzersiz renk atamalı eşleştirme bileşeni.
  */
 @Composable
 fun MatchingCard(
@@ -87,21 +83,22 @@ fun MatchingCard(
     onAnswerChange: (String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // İngilizce ve Türkçe kelimelerin bir kez karıştırılması
+    // İngilizce ve Türkçe kelimelerin sabit karıştırılması
     val englishWords = remember(activity.id) { activity.pairs.keys.toList().shuffled() }
     val turkishWords = remember(activity.id) { activity.pairs.values.toList().shuffled() }
 
     // Seçili İngilizce kelime
     var selectedEnglish by remember(activity.id) { mutableStateOf<String?>(null) }
 
-    // Kullanıcının oluşturduğu eşleşme çiftleri listesi
+    // Kullanıcının eşleştirdiği çiftler
     val userPairs = remember(activity.id) { mutableStateListOf<UserPair>() }
 
-    // Kartların Canvas üzerindeki X-Y orta noktalarının koordinat haritası
+    // Ana Box koordinatı ve kartların soket noktası koordinatları
+    var parentCoordinates by remember(activity.id) { mutableStateOf<LayoutCoordinates?>(null) }
     val enPositions = remember(activity.id) { mutableStateMapOf<String, Offset>() }
     val trPositions = remember(activity.id) { mutableStateMapOf<String, Offset>() }
 
-    // Tüm kelimeler eşleştiğinde KONTROL ET butonunu aktifleştirme
+    // Tüm kelimeler eşleştiğinde KONTROL ET butonunu aktif yapma
     LaunchedEffect(userPairs.size) {
         if (userPairs.size == activity.pairs.size && activity.pairs.isNotEmpty()) {
             onAnswerChange("COMPLETED")
@@ -116,7 +113,7 @@ fun MatchingCard(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Üst Başlık
+        // Üst Açıklama Başlıkları
         Text(
             text = activity.instruction,
             style = MaterialTheme.typography.labelSmall,
@@ -133,32 +130,34 @@ fun MatchingCard(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // Bağlantı Çizgileri + Izgara Kartları Kapsayıcısı
+        // Ana Izgara & Çizgi Kapsayıcı Kutusu
         Box(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { parentCoordinates = it }
         ) {
-            // ARKA PLAN: Eşleşme Çiftlerinin İp Bağlantı Çizgileri (Canvas)
+            // ARKA PLAN CANVAS: Kartların kenar soketleri arasındaki yatay bağlantı çizgileri
             Canvas(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.matchParentSize()
             ) {
                 userPairs.forEach { pair ->
                     val start = enPositions[pair.englishWord]
                     val end = trPositions[pair.turkishWord]
 
                     if (start != null && end != null) {
-                        // Değerlendirme durumuna göre renk belirleme
+                        // Değerlendirme durumuna göre çizgi ve düğüm rengi
                         val lineColor = when (answerState) {
                             AnswerState.CORRECT -> Color(0xFF22C55E) // Yeşil
                             AnswerState.INCORRECT -> {
-                                val isCorrectPair = activity.pairs[pair.englishWord] == pair.turkishWord
-                                if (isCorrectPair) Color(0xFF22C55E) else Color(0xFFEF4444)
+                                val isCorrect = activity.pairs[pair.englishWord] == pair.turkishWord
+                                if (isCorrect) Color(0xFF22C55E) else Color(0xFFEF4444)
                             }
                             else -> PairColors[pair.colorIndex % PairColors.size]
                         }
 
-                        // Hafif kıvrımlı Bezier ip yolu
+                        // Hafif esnek kıvrımlı Bezier yolu
                         val controlX1 = start.x + (end.x - start.x) * 0.4f
                         val controlX2 = start.x + (end.x - start.x) * 0.6f
 
@@ -167,29 +166,33 @@ fun MatchingCard(
                             cubicTo(controlX1, start.y, controlX2, end.y, end.x, end.y)
                         }
 
-                        // Kıvrımlı ip çizimi
+                        // Yatay Bağlantı Çizgisi Çizimi
                         drawPath(
                             path = path,
                             color = lineColor,
-                            style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round)
+                            style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                         )
 
-                        // Uçlardaki küçük bağlantı noktaları (Bağlantı bilyeleri)
-                        drawCircle(color = lineColor, radius = 5.dp.toPx(), center = start)
-                        drawCircle(color = lineColor, radius = 5.dp.toPx(), center = end)
+                        // Sol Kartın Sağ Kenar Soket Düğümü (Halka + İç Dolgu)
+                        drawCircle(color = lineColor, radius = 6.5.dp.toPx(), center = start)
+                        drawCircle(color = Color(0xFF0F172A), radius = 3.5.dp.toPx(), center = start)
+
+                        // Sağ Kartın Sol Kenar Soket Düğümü (Halka + İç Dolgu)
+                        drawCircle(color = lineColor, radius = 6.5.dp.toPx(), center = end)
+                        drawCircle(color = Color(0xFF0F172A), radius = 3.5.dp.toPx(), center = end)
                     }
                 }
             }
 
-            // ÖN PLAN: İki Sütunlu Izgara (Sol: İngilizce, Sağ: Türkçe)
+            // ÖN PLAN: İki Sütunlu Kartlar (Aralarında 44.dp net boşluk)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(44.dp)
             ) {
-                // İngilizce Sütunu
+                // İngilizce Sütunu (Sol)
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
                         text = "İngilizce",
@@ -203,7 +206,6 @@ fun MatchingCard(
                         val existingPair = userPairs.firstOrNull { it.englishWord == enWord }
                         val isSelected = selectedEnglish == enWord
 
-                        // Değerlendirme Durumu Hesaplama
                         val isCorrectPair = existingPair != null && activity.pairs[enWord] == existingPair.turkishWord
                         val isEvaluated = answerState != AnswerState.IDLE
 
@@ -214,18 +216,23 @@ fun MatchingCard(
                             isEvaluated = isEvaluated,
                             isCorrectPair = isCorrectPair,
                             enabled = answerState == AnswerState.IDLE,
-                            onPositioned = { offset ->
-                                enPositions[enWord] = offset
+                            onPositioned = { coords ->
+                                val parent = parentCoordinates
+                                if (parent != null && parent.isAttached) {
+                                    val localPos = parent.localPositionOf(coords, Offset.Zero)
+                                    enPositions[enWord] = Offset(
+                                        x = localPos.x + coords.size.width,
+                                        y = localPos.y + (coords.size.height / 2f)
+                                    )
+                                }
                             },
                             onClick = {
                                 if (answerState != AnswerState.IDLE) return@MatchingOptionChip
 
                                 if (existingPair != null) {
-                                    // Zaten eşleşmişse bağlantıyı kaldır
                                     userPairs.remove(existingPair)
                                     selectedEnglish = null
                                 } else {
-                                    // Seçimi güncelle
                                     selectedEnglish = if (isSelected) null else enWord
                                 }
                             }
@@ -233,10 +240,10 @@ fun MatchingCard(
                     }
                 }
 
-                // Türkçe Sütunu
+                // Türkçe Sütunu (Sağ)
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Text(
                         text = "Türkçe",
@@ -249,7 +256,6 @@ fun MatchingCard(
                     turkishWords.forEach { trWord ->
                         val existingPair = userPairs.firstOrNull { it.turkishWord == trWord }
 
-                        // Değerlendirme Durumu Hesaplama
                         val isCorrectPair = existingPair != null && activity.pairs[existingPair.englishWord] == trWord
                         val isEvaluated = answerState != AnswerState.IDLE
 
@@ -260,24 +266,32 @@ fun MatchingCard(
                             isEvaluated = isEvaluated,
                             isCorrectPair = isCorrectPair,
                             enabled = answerState == AnswerState.IDLE,
-                            onPositioned = { offset ->
-                                trPositions[trWord] = offset
+                            onPositioned = { coords ->
+                                val parent = parentCoordinates
+                                if (parent != null && parent.isAttached) {
+                                    val localPos = parent.localPositionOf(coords, Offset.Zero)
+                                    trPositions[trWord] = Offset(
+                                        x = localPos.x,
+                                        y = localPos.y + (coords.size.height / 2f)
+                                    )
+                                }
                             },
                             onClick = {
                                 if (answerState != AnswerState.IDLE) return@MatchingOptionChip
 
                                 val currentEn = selectedEnglish
                                 if (existingPair != null) {
-                                    // Zaten eşleşmişse bağlantıyı kaldır
                                     userPairs.remove(existingPair)
                                 } else if (currentEn != null) {
-                                    // Yeni Çift Oluştur ve Ekle
-                                    val newColorIndex = userPairs.size
+                                    // RENK ÇAKIŞMASINI ÖNLEYEN MANTIK: Halihazırda kullanılmayan İLK BENZERSİZ renk indeksini bul
+                                    val usedIndices = userPairs.map { it.colorIndex }.toSet()
+                                    val firstAvailableColorIndex = (0 until PairColors.size).firstOrNull { it !in usedIndices } ?: userPairs.size
+
                                     userPairs.add(
                                         UserPair(
                                             englishWord = currentEn,
                                             turkishWord = trWord,
-                                            colorIndex = newColorIndex
+                                            colorIndex = firstAvailableColorIndex
                                         )
                                     )
                                     selectedEnglish = null
@@ -292,10 +306,7 @@ fun MatchingCard(
 }
 
 /**
- * MatchingOptionChip: Özelleştirilmiş Eşleştirme Kartı.
- * - Sağ/Sol kenarlarından bağlantı ipi koordinatını hesaplar.
- * - Atanan özel çifte göre renk alır.
- * - Değerlendirme sonrasında Doğru (✓) veya Yanlış (✕) rozeti gösterir.
+ * MatchingOptionChip: Eşleştirme Kartı.
  */
 @Composable
 private fun MatchingOptionChip(
@@ -305,25 +316,24 @@ private fun MatchingOptionChip(
     isEvaluated: Boolean,
     isCorrectPair: Boolean,
     enabled: Boolean,
-    onPositioned: (Offset) -> Unit,
+    onPositioned: (LayoutCoordinates) -> Unit,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    // Basılma mikro ölçekleme animasyonu
     val scale by animateFloatAsState(
         targetValue = if (isPressed && enabled) 0.97f else 1.0f,
         animationSpec = spring(stiffness = 500f),
         label = "matchingPressScale"
     )
 
-    // Arka plan renginin duruma göre geçişi
+    // Arka plan rengi (Görsel 2 stili)
     val containerColor by animateColorAsState(
         targetValue = when {
             isEvaluated && isCorrectPair -> Color(0xFF14532D) // Koyu Yeşil (Doğru)
             isEvaluated && !isCorrectPair && pairColor != null -> Color(0xFF7F1D1D) // Koyu Kırmızı (Yanlış)
-            pairColor != null -> pairColor.copy(alpha = 0.25f) // Atanmış Çift Rengi (Şeffaf)
+            pairColor != null -> pairColor.copy(alpha = 0.15f) // Atanmış Çift Rengi Arka Plan Tint
             isSelected -> MaterialTheme.colorScheme.primaryContainer // Mor Vurgu (Seçili)
             else -> MaterialTheme.colorScheme.surface
         },
@@ -331,14 +341,14 @@ private fun MatchingOptionChip(
         label = "matchBg"
     )
 
-    // Kenarlık rengi geçişi
+    // Kenarlık rengi
     val borderColor by animateColorAsState(
         targetValue = when {
             isEvaluated && isCorrectPair -> Color(0xFF22C55E) // Canlı Yeşil
             isEvaluated && !isCorrectPair && pairColor != null -> Color(0xFFEF4444) // Canlı Kırmızı
-            pairColor != null -> pairColor // Atanmış Çift Rengi
+            pairColor != null -> pairColor // Atanmış Benzersiz Çift Kenarlık Rengi
             isSelected -> MaterialTheme.colorScheme.primary // Mor Kenarlık
-            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+            else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
         },
         label = "matchBorder"
     )
@@ -348,14 +358,7 @@ private fun MatchingOptionChip(
             .fillMaxWidth()
             .scale(scale)
             .onGloballyPositioned { coordinates ->
-                // Kartın orta noktasını Canvas koordinatı için iletme
-                val positionInParent = coordinates.positionInParent()
-                val size = coordinates.size
-                val centerOffset = Offset(
-                    x = positionInParent.x + (size.width / 2f),
-                    y = positionInParent.y + (size.height / 2f)
-                )
-                onPositioned(centerOffset)
+                onPositioned(coordinates)
             }
             .clickable(
                 interactionSource = interactionSource,
@@ -363,15 +366,15 @@ private fun MatchingOptionChip(
                 enabled = enabled,
                 onClick = onClick
             ),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
         border = BorderStroke(if (isSelected || pairColor != null || isEvaluated) 2.dp else 1.dp, borderColor)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 52.dp)
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+                .heightIn(min = 56.dp)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -382,13 +385,13 @@ private fun MatchingOptionChip(
                 color = when {
                     isEvaluated && isCorrectPair -> Color(0xFFDCFCE7)
                     isEvaluated && !isCorrectPair && pairColor != null -> Color(0xFFFCA5A5)
-                    pairColor != null -> pairColor
+                    pairColor != null -> Color.White
                     isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
                     else -> MaterialTheme.colorScheme.onSurface
                 }
             )
 
-            // Değerlendirme Simge Gösterimi
+            // Değerlendirme Sonu Simge Gösterimi (✓ veya ✕)
             if (isEvaluated && pairColor != null) {
                 if (isCorrectPair) {
                     Icon(
