@@ -31,5 +31,6 @@ data class Exercise(
 enum class ExerciseType {
     MULTIPLE_CHOICE,
     FILL_IN_THE_BLANK,
-    SENTENCE_BUILDER
+    SENTENCE_BUILDER,
+    MATCHING
 }

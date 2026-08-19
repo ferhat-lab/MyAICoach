@@ -27,7 +27,7 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = SurfaceVariant,
     onSurfaceVariant = TextSecondary,
 
-    error = Error,
+    error = ErrorRed,
     onError = Color.White,
 
     outline = Outline,

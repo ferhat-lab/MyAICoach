@@ -12,6 +12,10 @@ sealed class AppRoute(val route: String) {
 
     data object Home : AppRoute("home")
 
+    data object Categories : AppRoute("categories")
+
+    data object Profile : AppRoute("profile")
+
     data object Lesson : AppRoute("lesson/{stage}") {
 
         fun createRoute(stage: String): String {

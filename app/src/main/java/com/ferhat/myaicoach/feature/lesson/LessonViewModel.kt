@@ -1,8 +1,12 @@
 package com.ferhat.myaicoach.feature.lesson
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.ferhat.myaicoach.data.repository.LessonRepositoryImpl
+import com.ferhat.myaicoach.data.repository.StudentStateRepositoryImpl
 import com.ferhat.myaicoach.domain.lesson.AudioChoiceActivity
 import com.ferhat.myaicoach.domain.lesson.FillInTheBlankActivity
+import com.ferhat.myaicoach.domain.lesson.Lesson
 import com.ferhat.myaicoach.domain.lesson.LessonValidator
 import com.ferhat.myaicoach.domain.lesson.MatchingActivity
 import com.ferhat.myaicoach.domain.lesson.MultipleChoiceActivity
@@ -10,201 +14,58 @@ import com.ferhat.myaicoach.domain.lesson.ReverseChoiceActivity
 import com.ferhat.myaicoach.domain.lesson.SentenceBuilderActivity
 import com.ferhat.myaicoach.domain.lesson.ValidationResult
 import com.ferhat.myaicoach.domain.lesson.WordIntroduction
-import com.ferhat.myaicoach.domain.lesson.sample.A1Lesson1
+import com.ferhat.myaicoach.domain.repository.LessonRepository
+import com.ferhat.myaicoach.domain.repository.StudentStateRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class LessonViewModel : ViewModel() {
-
-    private val lesson = A1Lesson1
-
-    private val sampleActivities = listOf(
-        // 1. Target Encounter: name
-        WordIntroduction(
-            id = "intro_name",
-            targetIds = listOf("vocab_name"),
-            wordId = "vocab_name"
-        ),
-
-        // 2. Target Encounter: from
-        WordIntroduction(
-            id = "intro_from",
-            targetIds = listOf("vocab_from"),
-            wordId = "vocab_from"
-        ),
-
-        // 3. Multiple Choice: from (EN -> TR)
-        MultipleChoiceActivity(
-            id = "mc_from",
-            targetIds = listOf("vocab_from"),
-            instruction = "Doğru anlamı seç.",
-            prompt = "from",
-            options = listOf(
-                "-den / -dan",
-                "isim",
-                "yaşamak"
-            ),
-            correctAnswer = "-den / -dan"
-        ),
-
-        // 4. Reverse Choice: name (TR -> EN)
-        ReverseChoiceActivity(
-            id = "rc_name",
-            targetIds = listOf("vocab_name"),
-            instruction = "İngilizce karşılığını seç.",
-            prompt = "isim",
-            options = listOf(
-                "from",
-                "name",
-                "live"
-            ),
-            correctAnswer = "name"
-        ),
-
-        // 5. Target Encounter: live
-        WordIntroduction(
-            id = "intro_live",
-            targetIds = listOf("vocab_live"),
-            wordId = "vocab_live"
-        ),
-
-        // 6. Audio Choice: name
-        AudioChoiceActivity(
-            id = "audio_name",
-            targetIds = listOf("vocab_name"),
-            audioText = "name",
-            options = listOf(
-                "name",
-                "from",
-                "live"
-            ),
-            correctAnswer = "name"
-        ),
-
-        // 7. Fill in the Blank: name
-        FillInTheBlankActivity(
-            id = "fill_name",
-            targetIds = listOf("vocab_name"),
-            instruction = "Cümleyi tamamla.",
-            sentenceWithBlank = "My ___ is Alex.",
-            options = listOf(
-                "name",
-                "from",
-                "live"
-            ),
-            correctAnswer = "name"
-        ),
-
-        // 8. Reverse Choice: from
-        ReverseChoiceActivity(
-            id = "rc_from",
-            targetIds = listOf("vocab_from"),
-            instruction = "İngilizce karşılığını seç.",
-            prompt = "-den / -dan",
-            options = listOf(
-                "live",
-                "city",
-                "from"
-            ),
-            correctAnswer = "from"
-        ),
-
-        // 9. Sentence Builder: My name is Alex.
-        SentenceBuilderActivity(
-            id = "sb_my_name",
-            targetIds = listOf("vocab_name"),
-            instruction = "Cümleyi oluştur.",
-            promptTranslation = "Benim adım Alex.",
-            wordChips = listOf("Alex", "name", "My", "is"),
-            correctSentence = "My name is Alex"
-        ),
-
-        // 10. Target Encounter: city
-        WordIntroduction(
-            id = "intro_city",
-            targetIds = listOf("vocab_city"),
-            wordId = "vocab_city"
-        ),
-
-        // 11. Fill in the Blank: from
-        FillInTheBlankActivity(
-            id = "fill_from",
-            targetIds = listOf("vocab_from"),
-            instruction = "Cümleyi tamamla.",
-            sentenceWithBlank = "I am ___ Turkey.",
-            options = listOf(
-                "from",
-                "city",
-                "name"
-            ),
-            correctAnswer = "from"
-        ),
-
-        // 12. Audio Choice: live
-        AudioChoiceActivity(
-            id = "audio_live",
-            targetIds = listOf("vocab_live"),
-            audioText = "live",
-            options = listOf(
-                "live",
-                "city",
-                "from"
-            ),
-            correctAnswer = "live"
-        ),
-
-        // 13. Matching: hello, name, from, live
-        MatchingActivity(
-            id = "match_mix_1",
-            targetIds = listOf("vocab_hello", "vocab_name", "vocab_from", "vocab_live"),
-            instruction = "Kelime çiftlerini eşleştir.",
-            pairs = mapOf(
-                "hello" to "merhaba",
-                "name" to "isim",
-                "from" to "-den / -dan",
-                "live" to "yaşamak"
-            )
-        ),
-
-        // 14. Sentence Builder: I'm from Turkey.
-        SentenceBuilderActivity(
-            id = "sb_im_from",
-            targetIds = listOf("vocab_from"),
-            instruction = "Cümleyi oluştur.",
-            promptTranslation = "Ben Türkiye'denim.",
-            wordChips = listOf("Turkey", "from", "I'm"),
-            correctSentence = "I'm from Turkey"
-        )
-    )
+/**
+ * LessonViewModel: Ders akışı ve cevap kontrolü mantığı.
+ * LessonRepository ve StudentStateRepository katmanlarına bağlıdır.
+ */
+class LessonViewModel(
+    private val lessonRepository: LessonRepository = LessonRepositoryImpl(),
+    private val studentStateRepository: StudentStateRepository = StudentStateRepositoryImpl()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LessonUiState())
     val uiState: StateFlow<LessonUiState> = _uiState.asStateFlow()
 
     init {
-        loadAndValidateLesson()
+        loadLesson("a1_u1_l1")
     }
 
-    private fun loadAndValidateLesson() {
-        val validation = LessonValidator.validate(lesson, sampleActivities)
-        if (validation is ValidationResult.Error) {
-            _uiState.update {
-                it.copy(
-                    lesson = lesson,
-                    activities = emptyList(),
-                    errorMessage = validation.message,
-                    isLoading = false
-                )
-            }
-        } else {
-            _uiState.update {
-                it.copy(
-                    lesson = lesson,
-                    activities = sampleActivities,
-                    errorMessage = null,
-                    isLoading = false
-                )
+    fun loadLesson(lessonId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            lessonRepository.getLessonById(lessonId).collect { lesson ->
+                if (lesson != null) {
+                    val activities = generateActivitiesForLesson(lesson)
+                    val validation = LessonValidator.validate(lesson, activities)
+
+                    if (validation is ValidationResult.Error) {
+                        _uiState.update {
+                            it.copy(
+                                lesson = lesson,
+                                activities = emptyList(),
+                                errorMessage = validation.message,
+                                isLoading = false
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                lesson = lesson,
+                                activities = activities,
+                                errorMessage = null,
+                                isLoading = false
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -267,6 +128,86 @@ class LessonViewModel : ViewModel() {
                     attemptCount = 0
                 )
             }
+        } else {
+            // Ders Tamamlandı -> Öğrenci Durumunu Güncelle
+            viewModelScope.launch {
+                state.lesson?.let { completedLesson ->
+                    studentStateRepository.completeLesson(
+                        lessonId = completedLesson.id,
+                        xpEarned = 50,
+                        learnedTargetIds = completedLesson.vocabulary.map { it.id }
+                    )
+                }
+            }
         }
+    }
+
+    private fun generateActivitiesForLesson(lesson: Lesson): List<com.ferhat.myaicoach.domain.lesson.LessonActivity> {
+        val activities = mutableListOf<com.ferhat.myaicoach.domain.lesson.LessonActivity>()
+
+        // 1. Kelime Tanıtım Kartları
+        lesson.vocabulary.forEach { item ->
+            activities.add(
+                WordIntroduction(
+                    id = "intro_${item.id}",
+                    targetIds = listOf(item.id),
+                    wordId = item.id
+                )
+            )
+        }
+
+        // 2. Çoktan Seçmeli & Eşleştirme Aktiviteleri
+        lesson.exercises.forEach { exercise ->
+            when (exercise.type) {
+                com.ferhat.myaicoach.domain.lesson.ExerciseType.MULTIPLE_CHOICE -> {
+                    activities.add(
+                        MultipleChoiceActivity(
+                            id = exercise.id,
+                            targetIds = exercise.targetIds,
+                            instruction = exercise.instruction,
+                            prompt = exercise.prompt,
+                            options = exercise.options,
+                            correctAnswer = exercise.correctAnswer
+                        )
+                    )
+                }
+                com.ferhat.myaicoach.domain.lesson.ExerciseType.SENTENCE_BUILDER -> {
+                    activities.add(
+                        SentenceBuilderActivity(
+                            id = exercise.id,
+                            targetIds = exercise.targetIds,
+                            instruction = exercise.instruction,
+                            promptTranslation = exercise.prompt,
+                            wordChips = exercise.options,
+                            correctSentence = exercise.correctAnswer
+                        )
+                    )
+                }
+                com.ferhat.myaicoach.domain.lesson.ExerciseType.FILL_IN_THE_BLANK -> {
+                    activities.add(
+                        FillInTheBlankActivity(
+                            id = exercise.id,
+                            targetIds = exercise.targetIds,
+                            instruction = exercise.instruction,
+                            sentenceWithBlank = exercise.prompt,
+                            options = exercise.options,
+                            correctAnswer = exercise.correctAnswer
+                        )
+                    )
+                }
+                com.ferhat.myaicoach.domain.lesson.ExerciseType.MATCHING -> {
+                    activities.add(
+                        MatchingActivity(
+                            id = exercise.id,
+                            targetIds = exercise.targetIds,
+                            instruction = exercise.instruction,
+                            pairs = exercise.options.associateWith { "çeviri" }
+                        )
+                    )
+                }
+            }
+        }
+
+        return activities
     }
 }
