@@ -1,18 +1,23 @@
-import asyncio
+import os
 import base64
 import logging
 from typing import AsyncGenerator, Dict, Any, Optional
+import httpx
 from app.protocol import constants
 
 logger = logging.getLogger("MyAICoach-VoxCpmTtsService")
 
 class VoxCpmTtsService:
     """
-    VoxCpmTtsService: VoxCPM2 V2 Resmi 48 kHz PCM Streaming TTS Servis İstemcisi.
-    Her cümle segmenti için 48,000 Hz, 16-bit Mono PCM ses paketleri üretir ve akıtır.
+    VoxCpmTtsService: VoxCPM2 V2 Gerçek 48 kHz PCM Streaming TTS Servis İstemcisi.
+    Her cümle segmenti için voxcpm2_tts_service sunucusuna HTTP isteği gönderir
+    ve 48,000 Hz, 16-bit Mono PCM ses paketlerini (chunks) alır.
     """
-    def __init__(self, endpoint_url: str = "http://voxcpm2-tts-service:8002/v1/tts/stream"):
-        self.endpoint_url = endpoint_url
+    def __init__(self, endpoint_url: Optional[str] = None):
+        self.endpoint_url = endpoint_url or os.getenv(
+            "VOXCPM_SERVICE_URL",
+            "http://voxcpm2_tts_service:8002/v1/tts/stream"
+        )
         self.sample_rate = constants.AUDIO_SAMPLE_RATE
         self.channels = constants.AUDIO_CHANNELS
         self.encoding = constants.AUDIO_ENCODING
@@ -23,25 +28,52 @@ class VoxCpmTtsService:
         segment_id: int
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Gelen cümle metnini VoxCPM2 modeline verir ve parça parça (chunk-by-chunk)
-        48 kHz PCM binary ses paketleri üretir.
+        Gelen metin segmentini gerçek VoxCPM2 TTS servisine iletir,
+        dönen 48 kHz PCM parçalarını çözer ve TurnOrchestrator'a iletir.
         """
-        logger.info(f"🔊 VoxCPM2 TTS Ses Üretimi Başlatıldı (Segment #{segment_id}): \"{text_segment}\"")
+        logger.info(f"🔊 Gerçek VoxCPM2 TTS İstemcisi Tetiklendi ({self.endpoint_url}) [Segment #{segment_id}]: \"{text_segment}\"")
 
-        # Mock / Fallback 48kHz PCM Chunk Jeneratörü (Gerçek PyTorch VoxCPM2 API Uyumlu)
-        # 48,000 Hz * 2 byte (16-bit) * 0.2 saniye = 19,200 byte per 200ms chunk
-        mock_pcm_payload = b"\x00\x00" * 9600
-        base64_pcm = base64.b64encode(mock_pcm_payload).decode("utf-8")
+        payload = {
+            "textSegment": text_segment,
+            "segmentId": segment_id
+        }
 
-        # 2 ses parçası (chunk) simülasyonu
-        for chunk_index in range(2):
-            await asyncio.sleep(0.12)  # Low first-audio latency simulation (~120ms chunk generation)
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(self.endpoint_url, json=payload)
+                if response.status_code != 200:
+                    logger.error(f"⚠️ VoxCPM2 TTS Servis Hatası (Status {response.status_code})")
+                    return
+
+                res_data = response.json()
+                chunks = res_data.get("chunks", [])
+
+                for chunk in chunks:
+                    b64_pcm = chunk.get("base64Pcm", "")
+                    raw_bytes = base64.b64decode(b64_pcm) if b64_pcm else b""
+
+                    yield {
+                        "segmentId": chunk.get("segmentId", segment_id),
+                        "chunkIndex": chunk.get("chunkIndex", 0),
+                        "sampleRate": chunk.get("sampleRate", self.sample_rate),
+                        "channels": chunk.get("channels", self.channels),
+                        "encoding": chunk.get("encoding", self.encoding),
+                        "base64Pcm": b64_pcm,
+                        "rawBytes": raw_bytes
+                    }
+
+        except httpx.ConnectError:
+            logger.warning(f"⚠️ VoxCPM2 TTS servisine ulaşılamadı ({self.endpoint_url}). Fallback 48kHz PCM kullanılıyor.")
+            mock_payload = b"\x00\x00" * 9600
+            b64_pcm = base64.b64encode(mock_payload).decode("utf-8")
             yield {
                 "segmentId": segment_id,
-                "chunkIndex": chunk_index,
+                "chunkIndex": 0,
                 "sampleRate": self.sample_rate,
                 "channels": self.channels,
                 "encoding": self.encoding,
-                "base64Pcm": base64_pcm,
-                "rawBytes": mock_pcm_payload
+                "base64Pcm": b64_pcm,
+                "rawBytes": mock_payload
             }
+        except Exception as e:
+            logger.error(f"❌ VoxCpmTtsService İstek Hatası: {e}")

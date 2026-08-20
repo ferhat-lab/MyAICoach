@@ -39,4 +39,12 @@ services:
       - "8002:8002"
     environment:
       - PYTHONUNBUFFERED=1
+      - MODEL_ID=OpenBMB/VoxCPM2-V2-TTS
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     restart: unless-stopped
