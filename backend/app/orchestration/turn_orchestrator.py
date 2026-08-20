@@ -29,7 +29,7 @@ class TurnContext:
     def __init__(self, conversation_id: str, turn_id: str, start_sequence_id: int = 1):
         self.conversation_id = conversation_id
         self.turn_id = turn_id
-        self.server_sequence_counter = 1
+        self.server_sequence_counter = start_sequence_id
         self.active = True
         self.end_user_speech_received = False
         self.task: Optional[asyncio.Task] = None

@@ -22,6 +22,14 @@ services:
       - "8001:8001"
     environment:
       - PYTHONUNBUFFERED=1
+      - MODEL_ID=Qwen/Qwen2.5-3B-Instruct
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     restart: unless-stopped
 
   voxcpm2_tts_service:
