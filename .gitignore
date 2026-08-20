@@ -6,13 +6,16 @@ local.properties
 /.idea/
 .DS_Store
 /build
-/captures
+**/build/
+captures/
 .externalNativeBuild
 .cxx
 
 # Security & Secrets
 app/google-services.json
 .env
+.env.*
+!.env.example
 *.keystore
 *.jks
 secrets.properties
@@ -25,17 +28,31 @@ venv/
 .venv/
 env/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Audio Test Outputs & Model Weights
+# HuggingFace / AI caches
+.cache/
+huggingface/
+models--*/
+
+# Audio Test Outputs
 *.wav
-*.mp3
 *.pcm
 test_output.wav
+
+# AI Model Weights
 *.bin
 *.pt
 *.safetensors
 *.pth
 *.onnx
 *.h5
+*.gguf
+*.ckpt
+
+# Explicit local model weight folders
 models/qwen/weights/
 models/voxcpm2/weights/
+backend/models/qwen/weights/
+backend/models/voxcpm2/weights/
