@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 import logging
 from typing import AsyncGenerator, List, Dict, Any, Optional
 import httpx
@@ -17,7 +18,7 @@ Pedagogical Guidelines:
 
 class QwenLlmService:
     """
-    QwenLlmService: Gerçek Qwen3 LLM mikroservisine (qwen_llm_service) bağlanan
+    QwenLlmService: Qwen LLM mikroservisine (qwen_llm_service) bağlanan
     ve Server-Sent Events (SSE) jeton akışını okuyan istemci.
     """
     def __init__(self, endpoint_url: Optional[str] = None):
@@ -33,10 +34,10 @@ class QwenLlmService:
         conversation_history: Optional[List[Dict[str, str]]] = None
     ) -> AsyncGenerator[str, None]:
         """
-        Gerçek Qwen3 servisinden token-by-token (SSE) canlı metin akışı okur.
+        Qwen LLM servisinden token-by-token (SSE) canlı metin akışı okur.
         User Barge-In durumunda HTTP bağlantısı anında kapatılır.
         """
-        logger.info(f"🧠 Gerçek Qwen3 LLM İstemcisi Tetiklendi ({self.endpoint_url}): \"{user_prompt}\"")
+        logger.info(f"🧠 Qwen LLM İstemcisi Tetiklendi ({self.endpoint_url}): \"{user_prompt}\"")
 
         messages = [
             {"role": "system", "content": system_prompt}
@@ -52,13 +53,19 @@ class QwenLlmService:
             "stream": True
         }
 
+        timeout = httpx.Timeout(
+            connect=5.0,
+            read=30.0,
+            write=10.0,
+            pool=5.0
+        )
+
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 async with client.stream("POST", self.endpoint_url, json=payload) as response:
                     if response.status_code != 200:
-                        logger.error(f"⚠️ Qwen3 Servis Hatası (Status {response.status_code})")
-                        yield "I'm sorry, I encountered a temporary connection issue. 🐱"
-                        return
+                        logger.error(f"⚠️ Qwen LLM Servis HTTP Hatası (Status {response.status_code})")
+                        raise RuntimeError(f"QWEN_SERVICE_HTTP_ERROR:{response.status_code}")
 
                     async for line in response.aiter_lines():
                         line = line.strip()
@@ -79,12 +86,15 @@ class QwenLlmService:
                         except Exception as parse_err:
                             logger.warning(f"⚠️ SSE Parse Uyarısı: {parse_err}")
 
-        except httpx.ConnectError:
-            logger.warning(f"⚠️ Qwen3 servisine ulaşılamadı ({self.endpoint_url}). Fallback simülasyon yanıtı kullanılıyor.")
-            # Fallback (Eğer GPU konteyneri kapalıysa istemci çökmesin)
-            fallback_text = "Hello! I am Vani, your AI cat coach. Let's practice English together! 🐱"
-            for word in fallback_text.split(" "):
-                await asyncio.sleep(0.06)
-                yield word + " "
+        except httpx.ConnectError as e:
+            logger.error(f"❌ Qwen servisine ulaşılamadı ({self.endpoint_url}): {e}")
+            raise RuntimeError("QWEN_SERVICE_UNAVAILABLE") from e
+        except httpx.TimeoutException as e:
+            logger.error(f"❌ Qwen servisinde zaman aşımı ({self.endpoint_url}): {e}")
+            raise RuntimeError("QWEN_SERVICE_TIMEOUT") from e
+        except asyncio.CancelledError:
+            logger.info("🛑 Qwen token stream cancelled")
+            raise
         except Exception as e:
-            logger.error(f"❌ QwenLlmService İstek Hatası: {e}")
+            logger.error(f"❌ QwenLlmService Beklenmeyen İstek Hatası: {e}")
+            raise
